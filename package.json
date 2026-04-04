@@ -1,0 +1,21 @@
+{
+    "name": "bot-discord-multi",
+    "module": "src/main.ts",
+    "type": "module",
+    "private": true,
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "@supabase/supabase-js": "^2.98.0",
+        "chalk": "^5.6.2",
+        "discord-api-types": "^0.38.40",
+        "discord.js": "^14.25.1"
+    },
+    "scripts": {
+        "dev": "bun --watch ."
+    }
+}
