@@ -1,5 +1,5 @@
 {
-    "name": "bot-discord-multi",
+    "name": "nuit-bot",
     "module": "src/main.ts",
     "type": "module",
     "private": true,
@@ -20,3 +20,4 @@
         "start": "bun run src/main.ts"
     }
 }
+
