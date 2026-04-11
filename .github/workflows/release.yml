@@ -1,0 +1,31 @@
+name: Render Deploy
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Make POST request to Render Deploy Hook
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+                  sleep 90s
+                  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET ${{ secrets.RENDER_PROJECT_URI }})
+                  if [ "$HTTP_STATUS" -eq 200 ]; then
+                      echo "Deployment verified successfully."
+                  else
+                      echo "Deployment verification failed. Status: $HTTP_STATUS"
+                      git config user.name "github-actions[bot]"
+                      git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                      BRANCH="deploy-error-${{ github.run_id }}"
+                      git checkout -b $BRANCH
+                      git commit --allow-empty -m "Deployment verification failed"
+                      git push origin $BRANCH
+                      gh pr create --title "Deployment Verification Failed" --body "The deployment check failed with HTTP status $HTTP_STATUS." --base main --head $BRANCH
+                  fi
