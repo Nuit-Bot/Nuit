@@ -16,6 +16,7 @@
         "discord.js": "^14.25.1"
     },
     "scripts": {
-        "dev": "bun --watch ."
+        "dev": "bun --watch .",
+        "start": "bun run src/main.ts"
     }
 }
