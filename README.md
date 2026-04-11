@@ -64,6 +64,12 @@ To add a new slash command:
 2. Follow the structure of the ping command as a template
 3. Export a default object with `data` (SlashCommandBuilder) and `execute` (interaction handler)
 
+## Contributing
+
+We welcome contributions from the community. Please read our [contributing guidelines](./CONTRIBUTING.md) for more information on how to get involved with this project.
+
+Note that we may take longer to review pull requests depending on their size - larger PRs require more time to properly evaluate.
+
 ## Environment Variables
 
 Put the following environment variables in your `.env` file:
