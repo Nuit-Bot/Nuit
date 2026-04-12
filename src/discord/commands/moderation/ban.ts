@@ -1,5 +1,13 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, GuildMember, GuildMemberRoleManager, MessageFlags, PermissionsBitField, SlashCommandBuilder } from "discord.js";
 
+function cleanMultiline(content: string) {
+    return content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line !== '')
+        .join('\n');
+}
+
 export default {
     data: new SlashCommandBuilder()
         .setName("ban")
@@ -28,18 +36,19 @@ export default {
         const permissions = interaction.member!.permissions as PermissionsBitField;
         if (!permissions.has(PermissionsBitField.Flags.BanMembers)) {
             return await interaction.editReply({
-                content: `# Well that's weird!
+                content: cleanMultiline(`# Well that's weird!
                 You shouldn't be able to run that command unless you have some sort of trick up your sleeve.
-                -# But I guess it's okay, since you can't ban anyone anyway.` });
+                -# But I guess it's okay, since you can't ban anyone anyway.`)
+            });
         }
 
         // Check if the bot has ban members permission
         const botMember = await interaction.guild!.members!.fetch(interaction.client.user.id);
         if (!botMember.permissions.has(PermissionsBitField.Flags.BanMembers)) {
             return await interaction.editReply({
-                content: `# Well that's awkward!
+                content: cleanMultiline(`# Well that's awkward!
                 I'm lacking the permission to ban users from this server.
-                -# Maybe an admin could grant it to me? I promise I won't nuke anything!`
+                -# Maybe an admin could grant it to me? I promise I won't nuke anything!`)
             });
         }
 
@@ -49,9 +58,9 @@ export default {
         const targetHighest = (await target).roles.highest;
         if (botHighest.position <= targetHighest.position) {
             return await interaction.editReply({
-                content: `# Well that's unfortunate!
+                content: cleanMultiline(`# Well that's unfortunate!
                 I can't ban that user since my role is lower or equal to theirs.
-                -# Maybe an admin with higher permissions could give me that access?`
+                -# Maybe an admin with higher permissions could give me that access?`)
             });
         }
 
@@ -60,9 +69,9 @@ export default {
         const adminHighest = admin?.roles.highest;
         if (adminHighest.position <= targetHighest.position) {
             return await interaction.editReply({
-                content: `# Well that's not gonna work!
+                content: cleanMultiline(`# Well that's not gonna work!
                 You can't ban someone with a role higher than or equal to yours.
-                -# Role hierarchy matters, even for admins! Maybe ask someone with higher permissions?`
+                -# Role hierarchy matters, even for admins! Maybe ask someone with higher permissions?`)
             });
         }
 
