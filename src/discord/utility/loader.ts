@@ -4,9 +4,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import chalk from 'chalk';
 
-const eventsPath = path.join(__dirname, '..', 'events');
+const eventsPath = path.join(import.meta.dirname, '..', 'events');
 const eventFolders = await fs.readdir(eventsPath);
-const commandsPath = path.join(__dirname, '..', 'commands');
+const commandsPath = path.join(import.meta.dirname, '..', 'commands');
 const commandsFolders = await fs.readdir(commandsPath);
 
 export type Intents = Array<GatewayIntentBits | IntentsBitField>;
@@ -50,9 +50,9 @@ async function commands() {
 
 export async function registerCommands() {
     const commandsData = [];
-    const commandsPath = path.join(__dirname, '..', 'commands');
+    const commandsPath = path.join(import.meta.dirname, '..', 'commands');
     const commandsFolders = await fs.readdir(commandsPath);
-    
+
     for (const folder of commandsFolders) {
         const commandFiles = (await fs.readdir(path.join(commandsPath, folder))).filter(file => file.endsWith('.ts'));
         for (const file of commandFiles) {
@@ -70,7 +70,7 @@ export async function registerCommands() {
     // Register commands with Discord
     try {
         console.log(chalk.blue(`Started refreshing ${commandsData.length} application (/) commands.`));
-        
+
         const data: any = await rest.put(
             Routes.applicationCommands(client.user?.id as string),
             { body: commandsData }
