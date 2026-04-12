@@ -1,0 +1,10 @@
+# Nuit production config
+# This config solely exists for production servers of Nuit to pickup and use.
+# It's attempting to be as secure as possible to make sure the main Nuit bot doesn't get breached.
+# See config.example.toml for some sort of documentation about each setting.
+# When self-hosting, replace this file with the values of your choice.
+# For values that shouldn't be published or at least not on source control, use config.private.toml
+
+[host]
+hosters = ["817758821312495627", "970205634295377971"]
+allow_command_reloading = false
