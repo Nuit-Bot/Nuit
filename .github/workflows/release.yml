@@ -15,7 +15,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
-                token: ${{ secrets.DEPLOY_PAT }}
+                  token: ${{ secrets.DEPLOY_PAT }}
             - name: Make POST request to Render Deploy Hook
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,6 +32,7 @@ jobs:
                       git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                       BRANCH="deploy-error-${{ github.run_id }}"
                       git checkout -b $BRANCH
+                      git pull
                       git commit --allow-empty -m "Deployment verification failed"
                       git push origin $BRANCH
                       gh pr create --title "Deployment Verification Failed" --body "The deployment check failed with HTTP status $HTTP_STATUS." --base main --head $BRANCH
