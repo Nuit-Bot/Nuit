@@ -23,6 +23,13 @@ export default {
 
             // Always required
             .setRequired(true)
+        )
+        .addStringOption(option => option.setName("reason")
+            .setDescription("The reason to ban the user")
+
+            // Localization
+            .setNameLocalization("fr", "raison")
+            .setDescriptionLocalization("fr", "La raison de bannir l'utilisateur")
         ),
 
     async execute(interaction: ChatInputCommandInteraction) {
@@ -82,7 +89,11 @@ export default {
             .setFields({
                 name: `\`${(await target).displayName}\``,
                 value: `**Time on the server**: <t:${Math.floor((await target).joinedTimestamp! / 1000)}:R>}`,
-            })
+            },
+                {
+                    name: "Reason",
+                    value: `${interaction.options.getString('reason') || "No reason specified"}`
+                })
             .setFooter({ text: "You have 2 minutes to answer" })
             .setTimestamp();
 
@@ -128,7 +139,9 @@ export default {
                 });
 
                 try {
-                    await (await target).ban();
+                    await (await target).ban({
+                        reason: interaction.options.getString('reason') || undefined
+                    });
                     await interaction.followUp({
                         content: `# Got 'em!\n${(await target).displayName} has been successfully banned from the server.\n-# They won't be causing trouble anymore!`,
                         flags: MessageFlags.Ephemeral
