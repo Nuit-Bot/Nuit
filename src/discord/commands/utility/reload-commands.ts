@@ -1,14 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, EmbedBuilder, MessageFlags, SlashCommandBuilder } from "discord.js";
 import { registerCommands } from "../../utility/loader";
 import config from "../../../utility/config";
-
-function cleanMultiline(content: string) {
-    return content
-        .split("\n")
-        .map(line => line.trim())
-        .filter(line => line !== '')
-        .join("\n")
-}
+import { cleanMultiline } from "../../utility/cleanMultiline";
 
 export default {
     data: new SlashCommandBuilder()

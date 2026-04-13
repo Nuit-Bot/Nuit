@@ -1,12 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, ComponentType, EmbedBuilder, GuildMember, GuildMemberRoleManager, MessageFlags, PermissionsBitField, SlashCommandBuilder } from "discord.js";
-
-function cleanMultiline(content: string) {
-    return content
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line !== '')
-        .join('\n');
-}
+import { cleanMultiline } from "../../utility/cleanMultiline";
 
 export default {
     data: new SlashCommandBuilder()
@@ -70,7 +63,7 @@ export default {
                 -# Make sure the user is still in the server and try again.`)
             });
         }
-        
+
         const botHighest = botMember.roles.highest;
         const targetHighest = targetMember.roles.highest;
         if (botHighest.position <= targetHighest.position) {
