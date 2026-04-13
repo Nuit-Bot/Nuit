@@ -58,3 +58,4 @@ See README.md for more general instructions
 ## Code style
 
 - Always use double quotes instead of single quotes
+- Using `ephemeral: true` as a message flag in discord.js is deprecated. Use `flags: MessageFlags.Ephemeral` (`MessageFlags` imported from `discord.js`)
