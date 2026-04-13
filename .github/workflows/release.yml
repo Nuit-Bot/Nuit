@@ -9,10 +9,13 @@ jobs:
     deploy:
         runs-on: ubuntu-latest
         permissions:
-            contents: read
+            contents: write
             issues: write
+            pull-requests: write
         steps:
             - uses: actions/checkout@v4
+              with:
+                token: ${{ secrets.DEPLOY_PAT }}
             - name: Make POST request to Render Deploy Hook
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
