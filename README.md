@@ -76,7 +76,7 @@ Put the following environment variables in your `.env` file:
 
 - `DISCORD_TOKEN`: Your Discord bot token from the Discord Developer Portal
 - `SUPABASE_URL`: Your Supabase project URL
-- `SUPABASE_KEY`: Your Supabase service role key (MUST BE SERVICE ROLE)
+- `SUPABASE_KEY`: Your Supabase secret key (MUST BE SECRET KEY, found in Supabase dashboard > Settings > API Keys)
 
 They must be formatted like the following:
 
