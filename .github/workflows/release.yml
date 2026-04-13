@@ -33,6 +33,7 @@ jobs:
                       BRANCH="deploy-error-${{ github.run_id }}"
                       git checkout -b $BRANCH
                       git commit --allow-empty -m "Deployment verification failed"
-                      git push origin $BRANCH --force
-                      gh pr create --title "Deployment Verification Failed" --body "The deployment check failed with HTTP status $HTTP_STATUS." --base main --head $BRANCH || true
+                      git fetch origin $BRANCH 2>/dev/null || true
+                      git push origin $BRANCH --force-with-lease || git push origin $BRANCH -f
+                      gh pr create --title "Deployment Verification Failed" --body "The deployment check failed with HTTP status $HTTP_STATUS." --base main --head $BRANCH 2>/dev/null || echo "PR already exists"
                   fi
