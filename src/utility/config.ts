@@ -1,7 +1,14 @@
 import toml from "toml";
 import fs from "fs/promises";
 
-async function loadConfig(): Promise<any> {
+export interface Config {
+    host: {
+        hosters: string[],
+        allow_command_reloading: boolean
+    }
+}
+
+async function loadConfig(): Promise<Config> {
     let baseConfig = {};
 
     // Load base config if it exists
