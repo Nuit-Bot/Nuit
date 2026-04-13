@@ -37,6 +37,9 @@ bun install
 bun run dev
 ```
 
+> ![WARNING]
+> On first boot and when developing commands, use `bun run dev --register`.
+
 ### Production
 
 For production environments, we recommend using `bun ci` to install only production dependencies:
@@ -55,6 +58,9 @@ bun ci
 ```bash
 bun run start
 ```
+
+> ![WARNING]
+> If a slash command was added but not registered by the bot, use `bun run start --register`.
 
 ## Adding Commands
 

@@ -7,6 +7,8 @@ export default {
     once: true,
     async execute(client: Client) {
         console.log(chalk.green(`Ready! Logged in as ${client.user?.tag}`));
-        await registerCommands();
+        if (process.argv.includes("--register")) {
+            await registerCommands();
+        }
     },
 };
