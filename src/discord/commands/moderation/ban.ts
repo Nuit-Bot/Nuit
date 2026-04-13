@@ -59,10 +59,20 @@ export default {
             });
         }
 
-        // Check if the bot can ban the target
-        const target = interaction.guild?.members.fetch(interaction.options.getUser("target")!.id)!;
+        // Check if the user exists and fetch the target
+        let targetMember: GuildMember;
+        try {
+            targetMember = await interaction.guild!.members.fetch(interaction.options.getUser("target")!.id);
+        } catch (error) {
+            return await interaction.editReply({
+                content: cleanMultiline(`# User not found!
+                The user you're trying to ban doesn't seem to exist or isn't in this server.
+                -# Make sure the user is still in the server and try again.`)
+            });
+        }
+        
         const botHighest = botMember.roles.highest;
-        const targetHighest = (await target).roles.highest;
+        const targetHighest = targetMember.roles.highest;
         if (botHighest.position <= targetHighest.position) {
             return await interaction.editReply({
                 content: cleanMultiline(`# Well that's unfortunate!
@@ -85,26 +95,28 @@ export default {
         // Now, the ban mechanism (after 1 hour of making checks)
         const confirmEmbed = new EmbedBuilder()
             .setColor("Blurple")
-            .setDescription(`Are you sure you want to ban \`${(await target).displayName}\` from this server?`)
-            .setFields({
-                name: `\`${(await target).displayName}\``,
-                value: `**Time on the server**: <t:${Math.floor((await target).joinedTimestamp! / 1000)}:R>}`,
-            },
+            .setDescription(`Are you sure you want to ban \`${targetMember.displayName}\` from this server?`)
+            .addFields(
+                {
+                    name: `\`${targetMember.displayName}\``,
+                    value: `**Time on the server**: <t:${Math.floor(targetMember.joinedTimestamp! / 1000)}:R>`
+                },
                 {
                     name: "Reason",
                     value: `${interaction.options.getString('reason') || "No reason specified"}`
-                })
+                }
+            )
             .setFooter({ text: "You have 2 minutes to answer" })
             .setTimestamp();
 
         const confirmButton = new ButtonBuilder()
-            .setCustomId(`ban/confirm/${(await target).id}/${Date.now().toString()}`)
+            .setCustomId(`ban/confirm/${targetMember.id}/${Date.now().toString()}`)
             .setLabel("Confirm")
             .setEmoji("✅")
             .setStyle(ButtonStyle.Primary);
 
         const cancelButton = new ButtonBuilder()
-            .setCustomId(`ban/cancel/${(await target).id}/${Date.now().toString()}`)
+            .setCustomId(`ban/cancel/${targetMember.id}/${Date.now().toString()}`)
             .setLabel("Cancel")
             .setEmoji("❌")
             .setStyle(ButtonStyle.Primary);
@@ -133,17 +145,17 @@ export default {
             if (confirmation.customId.startsWith('ban/confirm')) {
                 // Handle ban confirmation
                 await confirmation.update({
-                    content: `# Processing ban...\nMaking sure ${(await target).displayName} can't come back to cause chaos.\n-# This might take a moment while I work my magic.`,
+                    content: `# Processing ban...\nMaking sure ${targetMember.displayName} can't come back to cause chaos.\n-# This might take a moment while I work my magic.`,
                     components: [],
                     embeds: []
                 });
 
                 try {
-                    await (await target).ban({
+                    await targetMember.ban({
                         reason: interaction.options.getString('reason') || undefined
                     });
                     await interaction.editReply({
-                        content: `# Got 'em!\n${(await target).displayName} has been successfully banned from the server.\n-# They won't be causing trouble anymore!`
+                        content: `# Got 'em!\n${targetMember.displayName} has been successfully banned from the server.\n-# They won't be causing trouble anymore!`
                     });
                 } catch (error) {
                     await interaction.editReply({
