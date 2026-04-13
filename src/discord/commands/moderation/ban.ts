@@ -142,14 +142,12 @@ export default {
                     await (await target).ban({
                         reason: interaction.options.getString('reason') || undefined
                     });
-                    await interaction.followUp({
-                        content: `# Got 'em!\n${(await target).displayName} has been successfully banned from the server.\n-# They won't be causing trouble anymore!`,
-                        flags: MessageFlags.Ephemeral
+                    await interaction.editReply({
+                        content: `# Got 'em!\n${(await target).displayName} has been successfully banned from the server.\n-# They won't be causing trouble anymore!`
                     });
                 } catch (error) {
-                    await interaction.followUp({
-                        content: `# Oops!\nSomething went wrong while trying to ban this user.\n-# Maybe they left already? Or I don't have enough permissions?`,
-                        flags: MessageFlags.Ephemeral
+                    await interaction.editReply({
+                        content: `# Oops!\nSomething went wrong while trying to ban this user.\n-# Maybe they left already? Or I don't have enough permissions?`
                     });
                 }
             } else if (confirmation.customId.startsWith('ban/cancel')) {
