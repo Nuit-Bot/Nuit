@@ -3,10 +3,14 @@ name: Render Deploy
 on:
     release:
         types: [published]
+    workflow_dispatch: {}
 
 jobs:
     deploy:
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            issues: write
         steps:
             - uses: actions/checkout@v4
             - name: Make POST request to Render Deploy Hook
