@@ -8,6 +8,16 @@ const eventsPath = path.join(import.meta.dirname, '..', 'events');
 const eventFolders = await fs.readdir(eventsPath);
 const commandsPath = path.join(import.meta.dirname, '..', 'commands');
 const commandsFolders = await fs.readdir(commandsPath);
+const commandsList: { filePath: string, command: any }[] = []
+
+for (const folder of commandsFolders) {
+    const commandFiles = (await fs.readdir(path.join(commandsPath, folder))).filter(file => file.endsWith('.ts'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, folder, file);
+        const command = (await import(filePath)).default;
+        commandsList.push({ filePath, command })
+    }
+}
 
 export type Intents = Array<GatewayIntentBits | IntentsBitField>;
 
@@ -33,38 +43,27 @@ async function events() {
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN as string);
 
 async function commands() {
-    for (const folder of commandsFolders) {
-        const commandFiles = (await fs.readdir(path.join(commandsPath, folder))).filter(file => file.endsWith('.ts'));
-        for (const file of commandFiles) {
-            const filePath = path.join(commandsPath, folder, file);
-            const command = (await import(filePath)).default;
-            if (!command) {
-                console.warn(`File ${file} has no command data, skipping.`);
-                continue;
-            }
-            // Set command to client for execution
-            client.commands.set(command.data.name, command);
+    for (const file of commandsList) {
+        const command = file.command;
+        if (!command) {
+            console.warn(`File ${file.filePath} has no command data, skipping.`);
+            continue;
         }
+        // Set command to client for execution
+        client.commands.set(command.data.name, command);
     }
 }
 
 export async function registerCommands() {
     const commandsData = [];
-    const commandsPath = path.join(import.meta.dirname, '..', 'commands');
-    const commandsFolders = await fs.readdir(commandsPath);
 
-    for (const folder of commandsFolders) {
-        const commandFiles = (await fs.readdir(path.join(commandsPath, folder))).filter(file => file.endsWith('.ts'));
-        for (const file of commandFiles) {
-            const filePath = path.join(commandsPath, folder, file);
-            const command = (await import(filePath)).default;
-            if (!command) {
-                console.warn(`File ${file} has no command data, skipping.`);
-                continue;
-            }
-            // Add command data for registration
-            commandsData.push(command.data.toJSON());
+    for (const file of commandsList) {
+        if (!file.command || !file.command.data.toJSON()) {
+            console.warn(`File ${file} has no command data, skipping.`);
+            continue;
         }
+        // Add command data for registration
+        commandsData.push(file.command.data.toJSON());
     }
 
     // Register commands with Discord
