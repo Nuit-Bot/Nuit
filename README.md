@@ -37,7 +37,7 @@ bun install
 bun run dev
 ```
 
-> ![WARNING]
+> [!WARNING]
 > On first boot and when developing commands, use `bun run dev --register`.
 
 ### Production
@@ -59,7 +59,7 @@ bun ci
 bun run start
 ```
 
-> ![WARNING]
+> [!WARNING]
 > If a slash command was added but not registered by the bot, use `bun run start --register`.
 
 ## Adding Commands
