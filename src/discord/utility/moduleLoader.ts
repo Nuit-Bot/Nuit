@@ -124,9 +124,9 @@ export async function setupCommandsAndEvents() {
         }
 
         if (event.once) {
-            client.on(event.name, handler);
-        } else {
             client.once(event.name, handler);
+        } else {
+            client.on(event.name, handler);
         }
     });
 
