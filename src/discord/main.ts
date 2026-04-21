@@ -3,7 +3,12 @@ import { scanModules, setupCommandsAndEvents } from "./utility/moduleLoader";
 import { join } from "node:path";
 import config from "../utility/config";
 import which from "which";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 export const client = new Client({
     intents: [
@@ -29,9 +34,16 @@ if (config.host.allow_external_modules) {
         for (const reg of config.registries) {
             if (reg.path) {
                 const regData = await readFile(reg.path, "utf-8");
-                const regJSON = JSON.parse(regData) as RegistryModule[];
+                const regJSON = JSON.parse(regData);
 
-                for (const mod of regJSON) {
+                if (!Array.isArray(regJSON)) {
+                    console.error(
+                        `Registry at ${reg.path} is not a valid array.`,
+                    );
+                    continue;
+                }
+
+                for (const mod of regJSON as RegistryModule[]) {
                     if (externalModules.find((m) => m.id === mod.id)) {
                         console.warn(
                             `Found 2 exact modules with ID "${mod.id}". Ignoring.`,
@@ -46,12 +58,19 @@ if (config.host.allow_external_modules) {
                     console.error(
                         `Request to ${reg.raw} was not OK: ${req.status} ${req.statusText}`,
                     );
-                    continue; // was `return`, which would exit the whole block
+                    continue;
                 }
 
-                const regJSON = (await req.json()) as RegistryModule[];
+                const regJSON = await req.json();
 
-                for (const mod of regJSON) {
+                if (!Array.isArray(regJSON)) {
+                    console.error(
+                        `Registry at ${reg.raw} did not return a valid array.`,
+                    );
+                    continue;
+                }
+
+                for (const mod of regJSON as RegistryModule[]) {
                     if (externalModules.find((m) => m.id === mod.id)) {
                         console.warn(
                             `Found 2 exact modules with ID "${mod.id}". Ignoring.`,
@@ -65,16 +84,102 @@ if (config.host.allow_external_modules) {
             }
         }
 
-        await writeFile(
-            join(import.meta.dirname, "..", "..", "registry.lock"),
-            JSON.stringify(externalModules),
-            "utf-8",
+        const lockPath = join(import.meta.dirname, "..", "..", "registry.lock");
+        const registryModulesPath = join(
+            import.meta.dirname,
+            "..",
+            "registry-modules",
         );
+
+        const lockFile = await readFile(lockPath, "utf-8").catch(() => null);
+        const lockModules: RegistryModule[] = lockFile
+            ? JSON.parse(lockFile)
+            : [];
+
+        const toAdd = externalModules.filter(
+            (m) => !lockModules.find((l) => l.id === m.id),
+        );
+        const toRemove = lockModules.filter(
+            (m) => !externalModules.find((e) => e.id === m.id),
+        );
+        const toUpdate = externalModules.filter((m) => {
+            const locked = lockModules.find((l) => l.id === m.id);
+            return locked && locked.commit !== m.commit;
+        });
+
+        if (!toAdd.length && !toRemove.length && !toUpdate.length) {
+            console.log("No changes to lockfile, finished.");
+        } else {
+            if (!existsSync(registryModulesPath)) {
+                await mkdir(registryModulesPath);
+            }
+
+            let failed = false;
+
+            for (const mod of toAdd) {
+                const modPath = join(registryModulesPath, mod.id);
+                try {
+                    await execFileAsync(
+                        "git",
+                        ["clone", `${mod.repo}.git`, mod.id],
+                        {
+                            cwd: registryModulesPath,
+                        },
+                    );
+                    await execFileAsync("git", ["checkout", mod.commit], {
+                        cwd: modPath,
+                    });
+                    console.log(`Installed module ${mod.id} at ${mod.commit}.`);
+                } catch (err) {
+                    console.error(`Failed to install module ${mod.id}:`, err);
+                    // clean up partial clone
+                    await rm(modPath, { recursive: true, force: true });
+                    failed = true;
+                }
+            }
+
+            for (const mod of toUpdate) {
+                const modPath = join(registryModulesPath, mod.id);
+                try {
+                    await execFileAsync("git", ["fetch"], { cwd: modPath });
+                    await execFileAsync("git", ["checkout", mod.commit], {
+                        cwd: modPath,
+                    });
+                    console.log(`Updated module ${mod.id} to ${mod.commit}.`);
+                } catch (err) {
+                    console.error(`Failed to update module ${mod.id}:`, err);
+                    failed = true;
+                }
+            }
+
+            for (const mod of toRemove) {
+                const modPath = join(registryModulesPath, mod.id);
+                try {
+                    await rm(modPath, { recursive: true, force: true });
+                    console.log(`Removed module ${mod.id}.`);
+                } catch (err) {
+                    console.error(`Failed to remove module ${mod.id}:`, err);
+                    failed = true;
+                }
+            }
+
+            if (!failed) {
+                await writeFile(
+                    lockPath,
+                    JSON.stringify(externalModules),
+                    "utf-8",
+                );
+            } else {
+                console.error(
+                    "Some module operations failed, lockfile was not updated.",
+                );
+            }
+        }
     }
 }
 
-// Scan after external modules are resolved/installed
 scanModules(join(import.meta.dirname, "..", "modules"));
+scanModules(join(import.meta.dirname, "..", "registry-modules"));
 setupCommandsAndEvents();
 
 client.login(process.env.DISCORD_TOKEN);
