@@ -178,10 +178,10 @@ if (config.host.allow_external_modules) {
     }
 
     if (await existsSync(join(import.meta.dirname, "..", "registry-modules")))
-        scanModules(join(import.meta.dirname, "..", "registry-modules"));
+        await scanModules(join(import.meta.dirname, "..", "registry-modules"));
 }
 
-scanModules(join(import.meta.dirname, "..", "modules"));
-setupCommandsAndEvents();
+await scanModules(join(import.meta.dirname, "..", "modules"));
+await setupCommandsAndEvents();
 
 client.login(process.env.DISCORD_TOKEN);
