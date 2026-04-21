@@ -194,7 +194,7 @@ export async function scanModules(path: string) {
         const packagePath = join(path, moduleDir, "package.json");
 
         if (!fs.existsSync(packagePath)) {
-            return console.warn(
+            console.warn(
                 cleanMultiline(
                     `${chalk.yellow(`Skipping ${moduleDir} as it does not have a package.json file.`)}
                     ${chalk.green("Fix")}: Create the package.json file in the module root.
@@ -204,6 +204,8 @@ export async function scanModules(path: string) {
                     )}`,
                 ),
             );
+
+            continue;
         }
 
         const packageJSON = JSON.parse(
@@ -211,7 +213,7 @@ export async function scanModules(path: string) {
         );
 
         if (!packageJSON.main) {
-            return console.warn(
+            console.warn(
                 cleanMultiline(
                     `Skipping ${moduleDir} as its package.json does not have a "main" entry.
                     ${chalk.green("Fix")}: Consider adding it and point it to the module's main file.
@@ -221,6 +223,7 @@ export async function scanModules(path: string) {
                     )}`,
                 ),
             );
+            continue;
         }
 
         const entryPath = join(path, moduleDir, packageJSON.main);
