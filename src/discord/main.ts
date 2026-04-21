@@ -175,11 +175,12 @@ if (config.host.allow_external_modules) {
                 );
             }
         }
+
+        scanModules(join(import.meta.dirname, "..", "registry-modules"));
     }
 }
 
 scanModules(join(import.meta.dirname, "..", "modules"));
-scanModules(join(import.meta.dirname, "..", "registry-modules"));
 setupCommandsAndEvents();
 
 client.login(process.env.DISCORD_TOKEN);
