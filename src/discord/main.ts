@@ -175,9 +175,10 @@ if (config.host.allow_external_modules) {
                 );
             }
         }
-
-        scanModules(join(import.meta.dirname, "..", "registry-modules"));
     }
+
+    if (await existsSync(join(import.meta.dirname, "..", "registry-modules")))
+        scanModules(join(import.meta.dirname, "..", "registry-modules"));
 }
 
 scanModules(join(import.meta.dirname, "..", "modules"));
