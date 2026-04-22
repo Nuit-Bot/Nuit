@@ -44,7 +44,7 @@ export async function applyEvents(registry: ModuleRegistry) {
         if (!event.name || !event.handler) {
             return console.warn(
                 cleanMultiline(
-                    `Event ${event} is missing "name" and/or "handler" values.
+                    `Event ${event.name} from ${event.module} is missing "name" and/or "handler" values.
                     ${chalk.green("Fix")}: Add the "name" and "handler" values.
                     ${chalk.gray(
                         cleanMultiline(`Details:
