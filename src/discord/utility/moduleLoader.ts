@@ -20,7 +20,7 @@ export const globalRegistry: ModuleRegistry = {
     events: [],
 };
 
-export async function applyCommands(registry: ModuleRegistry) {
+export function applyCommands(registry: ModuleRegistry) {
     registry.commands.forEach((command) => {
         if (!command.data || !command.execute) {
             return console.warn(
@@ -39,7 +39,7 @@ export async function applyCommands(registry: ModuleRegistry) {
     });
 }
 
-export async function applyEvents(registry: ModuleRegistry) {
+export function applyEvents(registry: ModuleRegistry) {
     registry.events.forEach((event) => {
         if (!event.name || !event.handler) {
             return console.warn(
@@ -89,8 +89,8 @@ export async function loadModule(path: string, moduleName: string) {
 
         await mod.setup(ctx);
 
-        await applyCommands(registry);
-        await applyEvents(registry);
+        applyCommands(registry);
+        applyEvents(registry);
     } catch (err) {
         console.error(`Error loading module ${path}`);
         console.error(err);
