@@ -7,7 +7,7 @@ import {
 import config from "../../utility/config";
 import { getSupabaseClient } from "../../utility/supabase";
 import { client } from "../main";
-import fs from "fs";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "path";
 import { Events, MessageFlags } from "discord.js";
 import { cleanMultiline } from "./cleanMultiline";
@@ -19,6 +19,8 @@ export const globalRegistry: ModuleRegistry = {
     commands: [],
     events: [],
 };
+
+export const guildlessEvents: string[] = [Events.ClientReady];
 
 export async function applyCommands(registry: ModuleRegistry) {
     registry.commands.forEach((command) => {
@@ -107,7 +109,9 @@ export async function setupCommandsAndEvents() {
 
         async function handler(...args: any[]) {
             const guildId = getGuildId(...args);
-            if (!guildId) return; // Probably a DM or guild-less context
+            if (!guildlessEvents.includes(event.name)) {
+                if (!guildId) return;
+            }
 
             const { data: enabledModules } = await supabase
                 .from("guild_modules")
@@ -188,12 +192,16 @@ export async function setupCommandsAndEvents() {
 }
 
 export async function scanModules(path: string) {
-    const modules = await fs.readdirSync(path);
+    const modules = await readdir(path);
 
     for (const moduleDir of modules) {
         const packagePath = join(path, moduleDir, "package.json");
 
-        if (!fs.existsSync(packagePath)) {
+        const packageRaw = await readFile(packagePath, "utf-8").catch(
+            () => null,
+        );
+
+        if (packageRaw === null) {
             console.warn(
                 cleanMultiline(
                     `${chalk.yellow(`Skipping ${moduleDir} as it does not have a package.json file.`)}
@@ -204,13 +212,10 @@ export async function scanModules(path: string) {
                     )}`,
                 ),
             );
-
             continue;
         }
 
-        const packageJSON = JSON.parse(
-            fs.readFileSync(packagePath, { encoding: "utf-8" }),
-        );
+        const packageJSON = JSON.parse(packageRaw);
 
         if (!packageJSON.main) {
             console.warn(
@@ -228,8 +233,21 @@ export async function scanModules(path: string) {
 
         const entryPath = join(path, moduleDir, packageJSON.main);
 
-        if (!fs.existsSync(entryPath)) {
-            return;
+        const entryExists = await readFile(entryPath)
+            .then(() => true)
+            .catch(() => false);
+        if (!entryExists) {
+            console.warn(
+                cleanMultiline(
+                    `${chalk.yellow(`Skipping ${moduleDir} as its entry file does not exist.`)}
+                    ${chalk.green("Fix")}: Ensure the "main" field in package.json points to an existing file.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Entry path: ${entryPath}`),
+                    )}`,
+                ),
+            );
+            continue;
         }
 
         await loadModule(entryPath, packageJSON.name);

@@ -5,7 +5,7 @@
     "": {
       "name": "bot-discord-multi",
       "dependencies": {
-        "@nuit-bot/api": "^0.0.9",
+        "@nuit-bot/api": "0.0.10",
         "@supabase/supabase-js": "^2.103.3",
         "@types/which": "^3.0.4",
         "chalk": "^5.6.2",
@@ -37,7 +37,7 @@
 
     "@discordjs/ws": ["@discordjs/ws@1.2.3", "", { "dependencies": { "@discordjs/collection": "^2.1.0", "@discordjs/rest": "^2.5.1", "@discordjs/util": "^1.1.0", "@sapphire/async-queue": "^1.5.2", "@types/ws": "^8.5.10", "@vladfrangu/async_event_emitter": "^2.2.4", "discord-api-types": "^0.38.1", "tslib": "^2.6.2", "ws": "^8.17.0" } }, "sha512-wPlQDxEmlDg5IxhJPuxXr3Vy9AjYq5xCvFWGJyD7w7Np8ZGu+Mc+97LCoEc/+AYCo2IDpKioiH0/c/mj5ZR9Uw=="],
 
-    "@nuit-bot/api": ["@nuit-bot/api@0.0.9", "", {}, "sha512-n42hijMfxqqdVImCzLZ3mB4R3EOxhx9YxEu5ZLNfa/KvIUTMjYjYHRRD4u7T4OL/4ctMoVmBzDsbhXMM/Qg7bw=="],
+    "@nuit-bot/api": ["@nuit-bot/api@0.0.10", "", {}, "sha512-iPcJntIhnvBlKWYLchfGLroPpDDpGwp8mPLry79qjRWd27LuM5/24ra5g6I+Tvbt0jUAurW3jNr6djIeXM+VUA=="],
 
     "@sapphire/async-queue": ["@sapphire/async-queue@1.5.5", "", {}, "sha512-cvGzxbba6sav2zZkH8GPf2oGk9yYoD5qrNWdu9fRehifgnFZJMV+nuy2nON2roRO4yQQ+v7MK/Pktl/HgfsUXg=="],
 

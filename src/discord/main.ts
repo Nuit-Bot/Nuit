@@ -3,8 +3,7 @@ import { scanModules, setupCommandsAndEvents } from "./utility/moduleLoader";
 import { join } from "node:path";
 import config from "../utility/config";
 import which from "which";
-import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
@@ -110,9 +109,7 @@ if (config.host.allow_external_modules) {
         if (!toAdd.length && !toRemove.length && !toUpdate.length) {
             console.log("No changes to lockfile, finished.");
         } else {
-            if (!existsSync(registryModulesPath)) {
-                await mkdir(registryModulesPath);
-            }
+            await mkdir(registryModulesPath, { recursive: true });
 
             let failed = false;
 
@@ -175,10 +172,11 @@ if (config.host.allow_external_modules) {
                 );
             }
         }
-    }
 
-    if (await existsSync(join(import.meta.dirname, "..", "registry-modules"))) {
-        await scanModules(join(import.meta.dirname, "..", "registry-modules"));
+        const registryModules = await readdir(registryModulesPath).catch(() => null);
+        if (registryModules) {
+            await scanModules(registryModulesPath);
+        }
     }
 }
 
