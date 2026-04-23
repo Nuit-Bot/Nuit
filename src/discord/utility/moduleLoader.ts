@@ -20,8 +20,6 @@ export const globalRegistry: ModuleRegistry = {
     events: [],
 };
 
-export const guildlessEvents: string[] = [Events.ClientReady];
-
 export async function applyCommands(registry: ModuleRegistry) {
     registry.commands.forEach((command) => {
         if (!command.data || !command.execute) {
@@ -99,7 +97,7 @@ export async function loadModule(path: string, moduleName: string) {
     }
 }
 
-const getGuildId = async (...args: any[]) => args[0]?.guildId ?? null; // Get guild ID from interactions, messages, etc.
+const getGuildId = (...args: any[]) => args[0]?.guildId ?? null;
 
 export async function setupCommandsAndEvents() {
     globalRegistry.events.forEach((event) => {
@@ -109,19 +107,18 @@ export async function setupCommandsAndEvents() {
 
         async function handler(...args: any[]) {
             const guildId = getGuildId(...args);
-            if (!guildlessEvents.includes(event.name)) {
+
+            if (event.guildScoped) {
                 if (!guildId) return;
-            }
 
-            const { data: enabledModules } = await supabase
-                .from("guild_modules")
-                .select("*")
-                .eq("guild_id", String(guildId))
-                .eq("module_id", event.module)
-                .single();
+                const { data: enabledModules } = await supabase
+                    .from("guild_modules")
+                    .select("*")
+                    .eq("guild_id", String(guildId))
+                    .eq("module_id", event.module)
+                    .single();
 
-            if (!enabledModules?.enabled) {
-                return;
+                if (!enabledModules?.enabled) return;
             }
 
             await event.handler(...args);
