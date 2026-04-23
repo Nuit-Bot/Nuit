@@ -1,11 +1,13 @@
 import { Client, IntentsBitField } from "discord.js";
 import { scanModules, setupCommandsAndEvents } from "./utility/moduleLoader";
+import { cleanMultiline } from "./utility/cleanMultiline";
 import { join } from "node:path";
 import config from "../utility/config";
 import which from "which";
 import { mkdir, readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import chalk from "chalk";
 
 const execFileAsync = promisify(execFile);
 
@@ -26,7 +28,10 @@ export interface RegistryModule {
 
 if (config.host.allow_external_modules) {
     if (!(await which("git", { nothrow: true }))) {
-        console.error("Git is not found, not installing external modules...");
+        console.warn(
+            cleanMultiline(`${chalk.yellow("Git is not found, skipping external modules.")}
+            ${chalk.green("Fix")}: Install Git and make sure it is available in your PATH.`),
+        );
     } else {
         const externalModules: RegistryModule[] = [];
 
@@ -36,8 +41,11 @@ if (config.host.allow_external_modules) {
                 const regJSON = JSON.parse(regData);
 
                 if (!Array.isArray(regJSON)) {
-                    console.error(
-                        `Registry at ${reg.path} is not a valid array.`,
+                    console.warn(
+                        cleanMultiline(`${chalk.yellow(`Registry at ${reg.path} is not a valid array, skipping.`)}
+                        ${chalk.green("Fix")}: Ensure the registry file exports a JSON array.
+                        ${chalk.gray(cleanMultiline(`Details:
+                            - Path: ${reg.path}`))}`),
                     );
                     continue;
                 }
@@ -54,8 +62,12 @@ if (config.host.allow_external_modules) {
             } else if (reg.raw) {
                 const req = await fetch(reg.raw);
                 if (!req.ok) {
-                    console.error(
-                        `Request to ${reg.raw} was not OK: ${req.status} ${req.statusText}`,
+                    console.warn(
+                        cleanMultiline(`${chalk.yellow(`Failed to fetch registry, skipping.`)}
+                        ${chalk.green("Fix")}: Ensure the registry URL is reachable and returns a valid JSON array.
+                        ${chalk.gray(cleanMultiline(`Details:
+                            - URL: ${reg.raw}
+                            - Status: ${req.status} ${req.statusText}`))}`),
                     );
                     continue;
                 }
@@ -63,8 +75,11 @@ if (config.host.allow_external_modules) {
                 const regJSON = await req.json();
 
                 if (!Array.isArray(regJSON)) {
-                    console.error(
-                        `Registry at ${reg.raw} did not return a valid array.`,
+                    console.warn(
+                        cleanMultiline(`${chalk.yellow(`Registry at ${reg.raw} did not return a valid array, skipping.`)}
+                        ${chalk.green("Fix")}: Ensure the registry URL returns a JSON array.
+                        ${chalk.gray(cleanMultiline(`Details:
+                            - URL: ${reg.raw}`))}`),
                     );
                     continue;
                 }
@@ -79,7 +94,10 @@ if (config.host.allow_external_modules) {
                     externalModules.push(mod);
                 }
             } else {
-                console.error("Registry is an incorrect type.");
+                console.warn(
+                    cleanMultiline(`${chalk.yellow("Registry entry has no valid source, skipping.")}
+                    ${chalk.green("Fix")}: Each registry entry must have either a "path" or "raw" field.`),
+                );
             }
         }
 
@@ -107,7 +125,7 @@ if (config.host.allow_external_modules) {
         });
 
         if (!toAdd.length && !toRemove.length && !toUpdate.length) {
-            console.log("No changes to lockfile, finished.");
+            console.log(chalk.green("External modules are up to date."));
         } else {
             await mkdir(registryModulesPath, { recursive: true });
 
@@ -126,10 +144,15 @@ if (config.host.allow_external_modules) {
                     await execFileAsync("git", ["checkout", mod.commit], {
                         cwd: modPath,
                     });
-                    console.log(`Installed module ${mod.id} at ${mod.commit}.`);
+                    console.log(chalk.green(`Installed module ${mod.id} at ${mod.commit}.`));
                 } catch (err) {
-                    console.error(`Failed to install module ${mod.id}:`, err);
-                    // clean up partial clone
+                    console.error(
+                        cleanMultiline(`Failed to install module ${chalk.yellow(mod.id)}.
+                        ${chalk.gray(cleanMultiline(`Details:
+                            - Repo: ${mod.repo}
+                            - Commit: ${mod.commit}
+                            - Error: ${err}`))}`),
+                    );
                     await rm(modPath, { recursive: true, force: true });
                     failed = true;
                 }
@@ -142,9 +165,14 @@ if (config.host.allow_external_modules) {
                     await execFileAsync("git", ["checkout", mod.commit], {
                         cwd: modPath,
                     });
-                    console.log(`Updated module ${mod.id} to ${mod.commit}.`);
+                    console.log(chalk.green(`Updated module ${mod.id} to ${mod.commit}.`));
                 } catch (err) {
-                    console.error(`Failed to update module ${mod.id}:`, err);
+                    console.error(
+                        cleanMultiline(`Failed to update module ${chalk.yellow(mod.id)}.
+                        ${chalk.gray(cleanMultiline(`Details:
+                            - Commit: ${mod.commit}
+                            - Error: ${err}`))}`),
+                    );
                     failed = true;
                 }
             }
@@ -153,9 +181,13 @@ if (config.host.allow_external_modules) {
                 const modPath = join(registryModulesPath, mod.id);
                 try {
                     await rm(modPath, { recursive: true, force: true });
-                    console.log(`Removed module ${mod.id}.`);
+                    console.log(chalk.green(`Removed module ${mod.id}.`));
                 } catch (err) {
-                    console.error(`Failed to remove module ${mod.id}:`, err);
+                    console.error(
+                        cleanMultiline(`Failed to remove module ${chalk.yellow(mod.id)}.
+                        ${chalk.gray(cleanMultiline(`Details:
+                            - Error: ${err}`))}`),
+                    );
                     failed = true;
                 }
             }
@@ -167,8 +199,8 @@ if (config.host.allow_external_modules) {
                     "utf-8",
                 );
             } else {
-                console.error(
-                    "Some module operations failed, lockfile was not updated.",
+                console.warn(
+                    chalk.yellow("Some module operations failed — lockfile was not updated."),
                 );
             }
         }
