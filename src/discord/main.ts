@@ -44,8 +44,10 @@ if (config.host.allow_external_modules) {
                     console.warn(
                         cleanMultiline(`${chalk.yellow(`Registry at ${reg.path} is not a valid array, skipping.`)}
                         ${chalk.green("Fix")}: Ensure the registry file exports a JSON array.
-                        ${chalk.gray(cleanMultiline(`Details:
-                            - Path: ${reg.path}`))}`),
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
+                            - Path: ${reg.path}`),
+                        )}`),
                     );
                     continue;
                 }
@@ -65,9 +67,11 @@ if (config.host.allow_external_modules) {
                     console.warn(
                         cleanMultiline(`${chalk.yellow(`Failed to fetch registry, skipping.`)}
                         ${chalk.green("Fix")}: Ensure the registry URL is reachable and returns a valid JSON array.
-                        ${chalk.gray(cleanMultiline(`Details:
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
                             - URL: ${reg.raw}
-                            - Status: ${req.status} ${req.statusText}`))}`),
+                            - Status: ${req.status} ${req.statusText}`),
+                        )}`),
                     );
                     continue;
                 }
@@ -78,8 +82,10 @@ if (config.host.allow_external_modules) {
                     console.warn(
                         cleanMultiline(`${chalk.yellow(`Registry at ${reg.raw} did not return a valid array, skipping.`)}
                         ${chalk.green("Fix")}: Ensure the registry URL returns a JSON array.
-                        ${chalk.gray(cleanMultiline(`Details:
-                            - URL: ${reg.raw}`))}`),
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
+                            - URL: ${reg.raw}`),
+                        )}`),
                     );
                     continue;
                 }
@@ -144,14 +150,20 @@ if (config.host.allow_external_modules) {
                     await execFileAsync("git", ["checkout", mod.commit], {
                         cwd: modPath,
                     });
-                    console.log(chalk.green(`Installed module ${mod.id} at ${mod.commit}.`));
+                    console.log(
+                        chalk.green(
+                            `Installed module ${mod.id} at ${mod.commit}.`,
+                        ),
+                    );
                 } catch (err) {
                     console.error(
                         cleanMultiline(`Failed to install module ${chalk.yellow(mod.id)}.
-                        ${chalk.gray(cleanMultiline(`Details:
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
                             - Repo: ${mod.repo}
                             - Commit: ${mod.commit}
-                            - Error: ${err}`))}`),
+                            - Error: ${err}`),
+                        )}`),
                     );
                     await rm(modPath, { recursive: true, force: true });
                     failed = true;
@@ -165,13 +177,19 @@ if (config.host.allow_external_modules) {
                     await execFileAsync("git", ["checkout", mod.commit], {
                         cwd: modPath,
                     });
-                    console.log(chalk.green(`Updated module ${mod.id} to ${mod.commit}.`));
+                    console.log(
+                        chalk.green(
+                            `Updated module ${mod.id} to ${mod.commit}.`,
+                        ),
+                    );
                 } catch (err) {
                     console.error(
                         cleanMultiline(`Failed to update module ${chalk.yellow(mod.id)}.
-                        ${chalk.gray(cleanMultiline(`Details:
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
                             - Commit: ${mod.commit}
-                            - Error: ${err}`))}`),
+                            - Error: ${err}`),
+                        )}`),
                     );
                     failed = true;
                 }
@@ -185,8 +203,10 @@ if (config.host.allow_external_modules) {
                 } catch (err) {
                     console.error(
                         cleanMultiline(`Failed to remove module ${chalk.yellow(mod.id)}.
-                        ${chalk.gray(cleanMultiline(`Details:
-                            - Error: ${err}`))}`),
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
+                            - Error: ${err}`),
+                        )}`),
                     );
                     failed = true;
                 }
@@ -200,12 +220,16 @@ if (config.host.allow_external_modules) {
                 );
             } else {
                 console.warn(
-                    chalk.yellow("Some module operations failed — lockfile was not updated."),
+                    chalk.yellow(
+                        "Some module operations failed — lockfile was not updated.",
+                    ),
                 );
             }
         }
 
-        const registryModules = await readdir(registryModulesPath).catch(() => null);
+        const registryModules = await readdir(registryModulesPath).catch(
+            () => null,
+        );
         if (registryModules) {
             await scanModules(registryModulesPath);
         }
