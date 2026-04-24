@@ -20,6 +20,16 @@ export const globalRegistry: ModuleRegistry = {
     events: [],
 };
 
+export async function getPackageJSON(path: string) {
+    const packageRaw = await readFile(path, "utf-8").catch(() => null);
+
+    if (packageRaw === null) {
+        return null;
+    }
+
+    return JSON.parse(packageRaw);
+}
+
 export function applyCommands(registry: ModuleRegistry) {
     registry.commands.forEach((command) => {
         if (!command.data || !command.execute) {
@@ -58,7 +68,11 @@ export function applyEvents(registry: ModuleRegistry) {
     });
 }
 
-export async function loadModule(path: string, moduleName: string) {
+export async function loadModule(
+    path: string,
+    moduleName: string,
+    packageJSON: Record<string, any>,
+) {
     try {
         const mod = await import(path);
 
@@ -75,6 +89,8 @@ export async function loadModule(path: string, moduleName: string) {
             );
         }
 
+        const kind = packageJSON.nuit?.kind ?? null;
+
         const registry: ModuleRegistry = {
             commands: [],
             events: [],
@@ -84,7 +100,7 @@ export async function loadModule(path: string, moduleName: string) {
             supabase,
             config,
             client,
-            api: createAPI(registry, moduleName),
+            api: createAPI(registry, moduleName, kind),
         };
 
         await mod.setup(ctx);
@@ -151,7 +167,7 @@ export async function setupCommandsAndEvents() {
         }
 
         const guildId = getGuildId(interaction);
-        if (!guildId) return; // Probably a DM or guild-less context
+        if (!guildId) return;
 
         const { data: enabledModules } = await supabase
             .from("guild_modules")
@@ -192,27 +208,9 @@ export async function scanModules(path: string) {
     const modules = await readdir(path);
 
     for (const moduleDir of modules) {
-        const packagePath = join(path, moduleDir, "package.json");
-
-        const packageRaw = await readFile(packagePath, "utf-8").catch(
-            () => null,
+        const packageJSON = await getPackageJSON(
+            join(path, moduleDir, "package.json"),
         );
-
-        if (packageRaw === null) {
-            console.warn(
-                cleanMultiline(
-                    `${chalk.yellow(`Skipping ${moduleDir} as it does not have a package.json file.`)}
-                    ${chalk.green("Fix")}: Create the package.json file in the module root.
-                    ${chalk.gray(
-                        cleanMultiline(`Details:
-                                        - Full path: ${join(path, moduleDir)}`),
-                    )}`,
-                ),
-            );
-            continue;
-        }
-
-        const packageJSON = JSON.parse(packageRaw);
 
         if (!packageJSON.main) {
             console.warn(
@@ -247,6 +245,6 @@ export async function scanModules(path: string) {
             continue;
         }
 
-        await loadModule(entryPath, packageJSON.name);
+        await loadModule(entryPath, packageJSON.name, packageJSON);
     }
 }

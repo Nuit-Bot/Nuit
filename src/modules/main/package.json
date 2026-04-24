@@ -1,3 +1,7 @@
 {
-    "main": "main.ts"
+    "main": "main.ts",
+    "nuit": {
+        "kind": "internal"
+    },
+    "name": "@nuit-bot/module-main"
 }
