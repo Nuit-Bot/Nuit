@@ -3,8 +3,26 @@ import {
     MessageFlags,
     SlashCommandBuilder,
     ChatInputCommandInteraction,
+    Events,
 } from "discord.js";
 import { cleanMultiline } from "../../discord/utility/cleanMultiline";
+import { randomInt } from "node:crypto";
+import chalk from "chalk";
+
+const loadingPhrases = [
+    "Bip boop, Nuit is here!",
+    "Hello, world!",
+    "Nuit has entered the chat.",
+    "Booting up the night shift...",
+    "Ready to cause some chaos.",
+    "Online and unhinged.",
+    "The bot has awakened.",
+    "Nuit reporting for duty!",
+    "Successfully pretending to work.",
+    "All systems go. Probably.",
+    "I'm awake, I'm awake...",
+    "Loaded! Don't ask how long it took.",
+];
 
 export async function setup(ctx: ModuleContext) {
     ctx.api.registerCommand({
@@ -18,4 +36,21 @@ export async function setup(ctx: ModuleContext) {
             });
         },
     });
+
+    ctx.api.onceEvent(
+        Events.ClientReady,
+        (client) => {
+            if (process.env.NODE_ENV === "development") {
+                client.user.setPresence({ status: "idle" });
+            } else {
+                client.user.setPresence({ status: "online" });
+            }
+            console.log(
+                chalk.blueBright(
+                    loadingPhrases[randomInt(loadingPhrases.length)],
+                ),
+            );
+        },
+        { guildScoped: false },
+    );
 }
