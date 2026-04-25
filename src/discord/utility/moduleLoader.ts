@@ -3,13 +3,14 @@ import {
     type BaseCtx,
     type ModuleContext,
     type ModuleRegistry,
+    type NuitCommand,
 } from "@nuit-bot/api";
 import config from "../../utility/config";
 import { getSupabaseClient } from "../../utility/supabase";
 import { client } from "../main";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "path";
-import { Events, MessageFlags } from "discord.js";
+import { Events, MessageFlags, REST, Routes } from "discord.js";
 import { cleanMultiline } from "./cleanMultiline";
 import chalk from "chalk";
 
@@ -176,7 +177,7 @@ export async function setupCommandsAndEvents() {
             .eq("module_id", command.module)
             .single();
 
-        if (!enabledModules?.enabled) {
+        if (!enabledModules?.enabled && !command.kind) {
             return;
         }
 
@@ -246,5 +247,30 @@ export async function scanModules(path: string) {
         }
 
         await loadModule(entryPath, packageJSON.name, packageJSON);
+    }
+}
+
+export async function pushCommandsToDiscord(commands: NuitCommand[]) {
+    const rest = new REST().setToken(process.env.DISCORD_TOKEN as string);
+
+    const mappedCommands = commands.map((c) =>
+        typeof c.data.toJSON === "function" ? c.data.toJSON() : c.data,
+    );
+
+    try {
+        await rest.put(
+            Routes.applicationCommands(process.env.DISCORD_CLIENT_ID as string),
+            { body: mappedCommands },
+        );
+    } catch (err) {
+        console.error(
+            cleanMultiline(`Failed to push commands to Discord.
+        ${chalk.gray(
+            cleanMultiline(`Details:
+            - Command count: ${mappedCommands.length}
+            - Commands: ${mappedCommands.map((c: any) => c.name).join(", ")}
+            - Error: ${err}`),
+        )}`),
+        );
     }
 }

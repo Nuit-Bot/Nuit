@@ -1,5 +1,10 @@
 import { Client, IntentsBitField } from "discord.js";
-import { scanModules, setupCommandsAndEvents } from "./utility/moduleLoader";
+import {
+    globalRegistry,
+    pushCommandsToDiscord,
+    scanModules,
+    setupCommandsAndEvents,
+} from "./utility/moduleLoader";
 import { cleanMultiline } from "./utility/cleanMultiline";
 import { join } from "node:path";
 import config from "../utility/config";
@@ -238,5 +243,6 @@ if (config.host.allow_external_modules) {
 
 await scanModules(join(import.meta.dirname, "..", "modules"));
 await setupCommandsAndEvents();
+await pushCommandsToDiscord(globalRegistry.commands);
 
 client.login(process.env.DISCORD_TOKEN);
