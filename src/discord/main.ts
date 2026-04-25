@@ -243,6 +243,8 @@ if (config.host.allow_external_modules) {
 
 await scanModules(join(import.meta.dirname, "..", "modules"));
 await setupCommandsAndEvents();
-await pushCommandsToDiscord(globalRegistry.commands);
+if (process.argv.includes("--register")) {
+    await pushCommandsToDiscord(globalRegistry.commands);
+}
 
 client.login(process.env.DISCORD_TOKEN);
