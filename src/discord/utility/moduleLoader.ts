@@ -178,7 +178,14 @@ export async function setupCommandsAndEvents() {
             .single();
 
         if (!enabledModules?.enabled) {
-            if (!command.kind) return;
+            if (!command.kind || command.kind === "optional") {
+                return await interaction.reply({
+                    content: cleanMultiline(`# This module isn't enabled
+                    The \`${command.module}\` module is disabled on this server.
+                    -# Ask a server admin to enable it in the bot settings.`),
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
         }
 
         const baseCtx: BaseCtx = {
