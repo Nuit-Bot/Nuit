@@ -173,12 +173,12 @@ export async function setupCommandsAndEvents() {
         const { data: enabledModules } = await supabase
             .from("guild_modules")
             .select("*")
-            .eq("guild_id", String(guildId))
+            .eq("guild_id", guildId)
             .eq("module_id", command.module)
             .single();
 
-        if (!enabledModules?.enabled && !command.kind) {
-            return;
+        if (!enabledModules?.enabled) {
+            if (!command.kind) return;
         }
 
         const baseCtx: BaseCtx = {
