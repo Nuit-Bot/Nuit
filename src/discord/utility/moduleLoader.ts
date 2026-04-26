@@ -126,7 +126,11 @@ export async function setupCommandsAndEvents() {
             const guildId = getGuildId(...args);
 
             if (event.guildScoped) {
-                if (!guildId) return;
+                if (!guildId) {
+                    return console.warn(
+                        `Event ${event.name} from module ${event.module} is guild scoped but no guild ID was found.`,
+                    );
+                }
 
                 const { data: enabledModules } = await supabase
                     .from("guild_modules")
@@ -168,7 +172,13 @@ export async function setupCommandsAndEvents() {
         }
 
         const guildId = getGuildId(interaction);
-        if (!guildId) return;
+        if (!guildId) {
+            return await interaction.reply({
+                content: cleanMultiline(`# This isn't the right place...
+                You ran the command in a DM or a guild-less context.
+                -# Run a command in a guild where I'm present!`),
+            });
+        }
 
         const { data: enabledModules } = await supabase
             .from("guild_modules")
