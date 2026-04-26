@@ -40,7 +40,7 @@ export function applyCommands(registry: ModuleRegistry) {
                     ${chalk.green("Fix")}: Add the "data" and "execute" values.
                     ${chalk.gray(
                         cleanMultiline(`Details:
-                                        - Module name: ${join(command.module)}`),
+                                        - Module name: ${command.module}`),
                     )}`,
                 ),
             );
@@ -219,6 +219,34 @@ export async function scanModules(path: string) {
         const packageJSON = await getPackageJSON(
             join(path, moduleDir, "package.json"),
         );
+
+        if (!packageJSON) {
+            console.warn(
+                cleanMultiline(
+                    `Skipping ${moduleDir} as it doesn't have a package.json.
+                    ${chalk.green("Fix")}: Make one inside the module's root.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Full path: ${join(path, moduleDir)}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
+
+        if (!packageJSON.name) {
+            console.warn(
+                cleanMultiline(
+                    `Skipping ${moduleDir} as its package.json does not have a "name" entry.
+                    ${chalk.green("Fix")}: Consider adding it with a unique name (for example, a scoped module like @nuit-bot/module-welcome).
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Full path: ${join(path, moduleDir)}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
 
         if (!packageJSON.main) {
             console.warn(
