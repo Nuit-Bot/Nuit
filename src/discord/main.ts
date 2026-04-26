@@ -31,6 +31,18 @@ export interface RegistryModule {
     commit: string;
 }
 
+function isValidRegistryModule(value: unknown): value is RegistryModule {
+    if (typeof value !== "object" || value === null) return false;
+    const m = value as Record<string, unknown>;
+    return (
+        typeof m.id === "string" && m.id.length > 0 &&
+        typeof m.repo === "string" && m.repo.length > 0 &&
+        typeof m.commit === "string" && m.commit.length > 0
+    );
+}
+
+const FETCH_TIMEOUT_MS = 10_000;
+
 if (config.host.allow_external_modules) {
     if (!(await which("git", { nothrow: true }))) {
         console.warn(
@@ -57,17 +69,43 @@ if (config.host.allow_external_modules) {
                     continue;
                 }
 
-                for (const mod of regJSON as RegistryModule[]) {
-                    if (externalModules.find((m) => m.id === mod.id)) {
+                const seenIdsLocal = new Set(externalModules.map((m) => m.id));
+                for (const entry of regJSON as unknown[]) {
+                    if (!isValidRegistryModule(entry)) {
                         console.warn(
-                            `Found 2 exact modules with ID "${mod.id}". Ignoring.`,
+                            chalk.yellow(`Registry at ${reg.path} contains an invalid entry, skipping it.`) +
+                            `\n${chalk.gray(`Entry: ${JSON.stringify(entry)}`)}`,
                         );
                         continue;
                     }
-                    externalModules.push(mod);
+                    if (seenIdsLocal.has(entry.id)) {
+                        console.warn(`Found 2 exact modules with ID "${entry.id}". Ignoring.`);
+                        continue;
+                    }
+                    seenIdsLocal.add(entry.id);
+                    externalModules.push(entry);
                 }
             } else if (reg.raw) {
-                const req = await fetch(reg.raw);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+                let req: Response;
+                try {
+                    req = await fetch(reg.raw, { signal: controller.signal });
+                } catch (err) {
+                    console.warn(
+                        cleanMultiline(`${chalk.yellow(`Failed to fetch registry (network error or timeout), skipping.`)}
+                        ${chalk.green("Fix")}: Ensure the registry URL is reachable within ${FETCH_TIMEOUT_MS}ms.
+                        ${chalk.gray(
+                            cleanMultiline(`Details:
+                            - URL: ${reg.raw}
+                            - Error: ${err}`),
+                        )}`),
+                    );
+                    continue;
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+                if (false) req = req!; // never reached, satisfies TS narrowing
                 if (!req.ok) {
                     console.warn(
                         cleanMultiline(`${chalk.yellow(`Failed to fetch registry, skipping.`)}
@@ -95,14 +133,21 @@ if (config.host.allow_external_modules) {
                     continue;
                 }
 
-                for (const mod of regJSON as RegistryModule[]) {
-                    if (externalModules.find((m) => m.id === mod.id)) {
+                const seenIds = new Set(externalModules.map((m) => m.id));
+                for (const entry of regJSON as unknown[]) {
+                    if (!isValidRegistryModule(entry)) {
                         console.warn(
-                            `Found 2 exact modules with ID "${mod.id}". Ignoring.`,
+                            chalk.yellow(`Registry at ${reg.raw} contains an invalid entry, skipping it.`) +
+                            `\n${chalk.gray(`Entry: ${JSON.stringify(entry)}`)}`,
                         );
                         continue;
                     }
-                    externalModules.push(mod);
+                    if (seenIds.has(entry.id)) {
+                        console.warn(`Found 2 exact modules with ID "${entry.id}". Ignoring.`);
+                        continue;
+                    }
+                    seenIds.add(entry.id);
+                    externalModules.push(entry);
                 }
             } else {
                 console.warn(
@@ -140,7 +185,10 @@ if (config.host.allow_external_modules) {
         } else {
             await mkdir(registryModulesPath, { recursive: true });
 
-            let failed = false;
+            const successfulAdds: RegistryModule[] = [];
+            const failedAddIds = new Set<string>();
+            const successfulUpdateIds = new Set<string>();
+            const successfulRemoveIds = new Set<string>();
 
             for (const mod of toAdd) {
                 const modPath = join(registryModulesPath, mod.id);
@@ -160,6 +208,7 @@ if (config.host.allow_external_modules) {
                             `Installed module ${mod.id} at ${mod.commit}.`,
                         ),
                     );
+                    successfulAdds.push(mod);
                 } catch (err) {
                     console.error(
                         cleanMultiline(`Failed to install module ${chalk.yellow(mod.id)}.
@@ -171,7 +220,7 @@ if (config.host.allow_external_modules) {
                         )}`),
                     );
                     await rm(modPath, { recursive: true, force: true });
-                    failed = true;
+                    failedAddIds.add(mod.id);
                 }
             }
 
@@ -187,6 +236,7 @@ if (config.host.allow_external_modules) {
                             `Updated module ${mod.id} to ${mod.commit}.`,
                         ),
                     );
+                    successfulUpdateIds.add(mod.id);
                 } catch (err) {
                     console.error(
                         cleanMultiline(`Failed to update module ${chalk.yellow(mod.id)}.
@@ -196,7 +246,6 @@ if (config.host.allow_external_modules) {
                             - Error: ${err}`),
                         )}`),
                     );
-                    failed = true;
                 }
             }
 
@@ -205,6 +254,7 @@ if (config.host.allow_external_modules) {
                 try {
                     await rm(modPath, { recursive: true, force: true });
                     console.log(chalk.green(`Removed module ${mod.id}.`));
+                    successfulRemoveIds.add(mod.id);
                 } catch (err) {
                     console.error(
                         cleanMultiline(`Failed to remove module ${chalk.yellow(mod.id)}.
@@ -213,20 +263,41 @@ if (config.host.allow_external_modules) {
                             - Error: ${err}`),
                         )}`),
                     );
-                    failed = true;
                 }
             }
 
-            if (!failed) {
-                await writeFile(
-                    lockPath,
-                    JSON.stringify(externalModules),
-                    "utf-8",
-                );
-            } else {
+            // Build the accurate post-operation lockfile state from what actually succeeded.
+            const newLockState: RegistryModule[] = [
+                // Kept: previously locked modules that weren't removed successfully
+                ...lockModules.filter(
+                    (m) =>
+                        !successfulRemoveIds.has(m.id) &&
+                        !toUpdate.find((u) => u.id === m.id) &&
+                        !toAdd.find((a) => a.id === m.id),
+                ),
+                // Updated: replace old commit with new for those that succeeded
+                ...toUpdate
+                    .filter((m) => successfulUpdateIds.has(m.id))
+                    .map((m) => ({ ...m })),
+                // Carry old state for failed updates
+                ...toUpdate
+                    .filter((m) => !successfulUpdateIds.has(m.id))
+                    .map((m) => lockModules.find((l) => l.id === m.id)!),
+                // Newly added modules that succeeded
+                ...successfulAdds,
+            ];
+
+            await writeFile(lockPath, JSON.stringify(newLockState), "utf-8");
+
+            const anyFailed =
+                failedAddIds.size > 0 ||
+                toUpdate.some((m) => !successfulUpdateIds.has(m.id)) ||
+                toRemove.some((m) => !successfulRemoveIds.has(m.id));
+
+            if (anyFailed) {
                 console.warn(
                     chalk.yellow(
-                        "Some module operations failed — lockfile was not updated.",
+                        "Some module operations failed — lockfile reflects partial progress.",
                     ),
                 );
             }

@@ -55,7 +55,7 @@ export function applyEvents(registry: ModuleRegistry) {
         if (!event.name || !event.handler) {
             return console.warn(
                 cleanMultiline(
-                    `Event ${event.name} from ${event.module} is missing "name" and/or "handler" values.
+                    `Event ${String(event.name)} from ${event.module} is missing "name" and/or "handler" values.
                     ${chalk.green("Fix")}: Add the "name" and "handler" values.
                     ${chalk.gray(
                         cleanMultiline(`Details:
@@ -128,7 +128,7 @@ export async function setupCommandsAndEvents() {
             if (event.guildScoped) {
                 if (!guildId) {
                     return console.warn(
-                        `Event ${event.name} from module ${event.module} is guild scoped but no guild ID was found.`,
+                        `Event ${String(event.name)} from module ${event.module} is guild scoped but no guild ID was found.`,
                     );
                 }
 
@@ -137,23 +137,25 @@ export async function setupCommandsAndEvents() {
                     .select("*")
                     .eq("guild_id", String(guildId))
                     .eq("module_id", event.module)
-                    .single();
+                    .single() as { data: { enabled: boolean } | null };
 
                 if (!enabledModules?.enabled) return;
             }
 
-            await event.handler(...args);
+            await (event.handler as (...a: any[]) => Promise<void> | void)(
+                ...args,
+            );
         }
 
         if (event.once) {
-            client.once(event.name, handler);
+            client.once(event.name as string, handler);
         } else {
-            client.on(event.name, handler);
+            client.on(event.name as string, handler);
         }
     });
 
     client.on(Events.InteractionCreate, async (interaction) => {
-        if (!interaction.isCommand()) return;
+        if (!interaction.isChatInputCommand()) return;
 
         const command = globalRegistry.commands.find(
             (com) => com.data.name === interaction.commandName,
@@ -185,7 +187,7 @@ export async function setupCommandsAndEvents() {
             .select("*")
             .eq("guild_id", guildId)
             .eq("module_id", command.module)
-            .single();
+            .single() as { data: { enabled: boolean } | null };
 
         if (!enabledModules?.enabled) {
             if (!command.kind || command.kind === "optional") {
@@ -274,9 +276,7 @@ export async function scanModules(path: string) {
 
         const entryPath = join(path, moduleDir, packageJSON.main);
 
-        const entryExists = await readFile(entryPath)
-            .then(() => true)
-            .catch(() => false);
+        const entryExists = await Bun.file(entryPath).exists();
         if (!entryExists) {
             console.warn(
                 cleanMultiline(

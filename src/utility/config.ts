@@ -55,22 +55,36 @@ async function loadConfig(): Promise<Config> {
     return deepMerge(deepMerge(exampleConfig, baseConfig), privateConfig);
 }
 
+/**
+ * Keys whose arrays are concatenated across configs rather than replaced.
+ * All other arrays (e.g. `hosters`) are replaced by the higher-priority config.
+ */
+const CONCAT_ARRAY_KEYS = new Set(["registries"]);
+
 function deepMerge(target: any, source: any): any {
     const result = { ...target };
 
     for (const key in source) {
-        if (source[key] !== undefined) {
-            if (
-                typeof source[key] === "object" &&
-                source[key] !== null &&
-                !Array.isArray(source[key]) &&
-                typeof target[key] === "object" &&
-                target[key] !== null
-            ) {
-                result[key] = deepMerge(target[key], source[key]);
+        if (source[key] === undefined) continue;
+
+        const srcVal = source[key];
+        const tgtVal = target[key];
+
+        if (Array.isArray(srcVal)) {
+            if (CONCAT_ARRAY_KEYS.has(key) && Array.isArray(tgtVal)) {
+                result[key] = [...tgtVal, ...srcVal];
             } else {
-                result[key] = source[key];
+                result[key] = srcVal;
             }
+        } else if (
+            typeof srcVal === "object" &&
+            srcVal !== null &&
+            typeof tgtVal === "object" &&
+            tgtVal !== null
+        ) {
+            result[key] = deepMerge(tgtVal, srcVal);
+        } else {
+            result[key] = srcVal;
         }
     }
 
