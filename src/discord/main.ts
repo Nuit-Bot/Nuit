@@ -8,7 +8,6 @@ import {
 import { cleanMultiline } from "./utility/cleanMultiline";
 import { join } from "node:path";
 import config from "../utility/config";
-import which from "which";
 import { mkdir, readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -35,16 +34,19 @@ function isValidRegistryModule(value: unknown): value is RegistryModule {
     if (typeof value !== "object" || value === null) return false;
     const m = value as Record<string, unknown>;
     return (
-        typeof m.id === "string" && m.id.length > 0 &&
-        typeof m.repo === "string" && m.repo.length > 0 &&
-        typeof m.commit === "string" && m.commit.length > 0
+        typeof m.id === "string" &&
+        m.id.length > 0 &&
+        typeof m.repo === "string" &&
+        m.repo.length > 0 &&
+        typeof m.commit === "string" &&
+        m.commit.length > 0
     );
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
 
 if (config.host.allow_external_modules) {
-    if (!(await which("git", { nothrow: true }))) {
+    if (!(await Bun.which("git"))) {
         console.warn(
             cleanMultiline(`${chalk.yellow("Git is not found, skipping external modules.")}
             ${chalk.green("Fix")}: Install Git and make sure it is available in your PATH.`),
@@ -73,13 +75,17 @@ if (config.host.allow_external_modules) {
                 for (const entry of regJSON as unknown[]) {
                     if (!isValidRegistryModule(entry)) {
                         console.warn(
-                            chalk.yellow(`Registry at ${reg.path} contains an invalid entry, skipping it.`) +
-                            `\n${chalk.gray(`Entry: ${JSON.stringify(entry)}`)}`,
+                            chalk.yellow(
+                                `Registry at ${reg.path} contains an invalid entry, skipping it.`,
+                            ) +
+                                `\n${chalk.gray(`Entry: ${JSON.stringify(entry)}`)}`,
                         );
                         continue;
                     }
                     if (seenIdsLocal.has(entry.id)) {
-                        console.warn(`Found 2 exact modules with ID "${entry.id}". Ignoring.`);
+                        console.warn(
+                            `Found 2 exact modules with ID "${entry.id}". Ignoring.`,
+                        );
                         continue;
                     }
                     seenIdsLocal.add(entry.id);
@@ -87,7 +93,10 @@ if (config.host.allow_external_modules) {
                 }
             } else if (reg.raw) {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+                const timeoutId = setTimeout(
+                    () => controller.abort(),
+                    FETCH_TIMEOUT_MS,
+                );
                 let req: Response;
                 try {
                     req = await fetch(reg.raw, { signal: controller.signal });
@@ -137,13 +146,17 @@ if (config.host.allow_external_modules) {
                 for (const entry of regJSON as unknown[]) {
                     if (!isValidRegistryModule(entry)) {
                         console.warn(
-                            chalk.yellow(`Registry at ${reg.raw} contains an invalid entry, skipping it.`) +
-                            `\n${chalk.gray(`Entry: ${JSON.stringify(entry)}`)}`,
+                            chalk.yellow(
+                                `Registry at ${reg.raw} contains an invalid entry, skipping it.`,
+                            ) +
+                                `\n${chalk.gray(`Entry: ${JSON.stringify(entry)}`)}`,
                         );
                         continue;
                     }
                     if (seenIds.has(entry.id)) {
-                        console.warn(`Found 2 exact modules with ID "${entry.id}". Ignoring.`);
+                        console.warn(
+                            `Found 2 exact modules with ID "${entry.id}". Ignoring.`,
+                        );
                         continue;
                     }
                     seenIds.add(entry.id);
