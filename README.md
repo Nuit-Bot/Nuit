@@ -38,7 +38,7 @@ bun run dev
 ```
 
 > [!WARNING]
-> On first boot and when developing commands, use `bun run dev --register`.
+> On first boot or when a command's `data` field has been changed, use `bun run dev --register`.
 
 ### Production
 
