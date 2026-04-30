@@ -2,8 +2,8 @@ import type { ModuleContext } from "@nuit-bot/api";
 import {
     MessageFlags,
     SlashCommandBuilder,
-    ChatInputCommandInteraction,
     Events,
+    type Interaction,
 } from "discord.js";
 import { cleanMultiline } from "../../discord/utility/cleanMultiline";
 import { randomInt } from "node:crypto";
@@ -27,7 +27,8 @@ const loadingPhrases = [
 export async function setup(ctx: ModuleContext) {
     ctx.api.registerCommand({
         data: new SlashCommandBuilder().setName("ping").setDescription("Pong!"),
-        async execute(interaction: ChatInputCommandInteraction) {
+        async execute(interaction: Interaction) {
+            if (!interaction.isChatInputCommand()) return;
             await interaction.reply({
                 content: cleanMultiline(`Pong 🏓!
                 Bot's API latency: \`${interaction.client.ws.ping}\`ms

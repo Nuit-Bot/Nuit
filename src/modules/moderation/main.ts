@@ -1,13 +1,12 @@
+import type { Interaction } from "discord.js";
 import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonInteraction,
     ButtonStyle,
-    ChatInputCommandInteraction,
     ComponentType,
     EmbedBuilder,
     GuildMember,
-    GuildMemberRoleManager,
     MessageFlags,
     PermissionsBitField,
     SlashCommandBuilder,
@@ -29,29 +28,23 @@ export async function setup(ctx: ModuleContext) {
                 option
                     .setName("target")
                     .setDescription("The user to ban")
-
-                    // Localization
                     .setNameLocalization("fr", "cible")
                     .setDescriptionLocalization("fr", "L'utilisateur à bannir ")
-
-                    // Always required
                     .setRequired(true),
             )
             .addStringOption((option) =>
                 option
                     .setName("reason")
                     .setDescription("The reason to ban the user")
-
-                    // Localization
                     .setNameLocalization("fr", "raison")
                     .setDescriptionLocalization(
                         "fr",
                         "La raison de bannir l'utilisateur",
                     ),
             ),
-        async execute(interaction: ChatInputCommandInteraction) {
-            // Defer the reply / show a loading message to the user
-            // It's also ephemeral, so it only shows to the user who ran the command
+        async execute(interaction: Interaction) {
+            if (!interaction.isChatInputCommand()) return;
+
             await interaction.deferReply({
                 flags: MessageFlags.Ephemeral,
             });
@@ -67,7 +60,6 @@ export async function setup(ctx: ModuleContext) {
                 });
             }
 
-            // Check if the bot has ban members permission
             const botMember = await interaction.guild!.members!.fetch(
                 interaction.client.user.id,
             );
@@ -81,7 +73,6 @@ export async function setup(ctx: ModuleContext) {
                 });
             }
 
-            // Check if the user exists and fetch the target
             let targetMember: GuildMember;
             try {
                 targetMember = await interaction.guild!.members.fetch(
@@ -105,7 +96,6 @@ export async function setup(ctx: ModuleContext) {
                 });
             }
 
-            // Check if the admin can ban the target
             const admin = interaction.member as GuildMember;
             const adminHighest = admin?.roles.highest;
             if (adminHighest.position <= targetHighest.position) {
@@ -116,7 +106,6 @@ export async function setup(ctx: ModuleContext) {
                 });
             }
 
-            // Now, the ban mechanism (after 1 hour of making checks)
             const confirmEmbed = new EmbedBuilder()
                 .setColor("Blurple")
                 .setDescription(
@@ -176,7 +165,6 @@ export async function setup(ctx: ModuleContext) {
                 });
 
                 if (confirmation.customId.startsWith("ban/confirm")) {
-                    // Handle ban confirmation
                     await confirmation.update({
                         content: `# Processing ban...\nMaking sure ${targetMember.displayName} can't come back to cause chaos.\n-# This might take a moment while I work my magic.`,
                         components: [],
@@ -198,7 +186,6 @@ export async function setup(ctx: ModuleContext) {
                         });
                     }
                 } else if (confirmation.customId.startsWith("ban/cancel")) {
-                    // Handle cancel
                     await confirmation.update({
                         content: "Ban operation cancelled.",
                         components: [],
@@ -206,7 +193,6 @@ export async function setup(ctx: ModuleContext) {
                     });
                 }
             } catch (error) {
-                // Collector ended due to timeout
                 await interaction.editReply({
                     content: `# Time's up!\nNo response received, so I'm not banning anyone.\n-# Maybe you changed your mind? That's cool too!`,
                     components: [],
