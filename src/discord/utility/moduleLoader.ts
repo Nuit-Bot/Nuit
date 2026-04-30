@@ -28,7 +28,18 @@ export async function getPackageJSON(path: string) {
         return null;
     }
 
-    return JSON.parse(packageRaw);
+    try {
+        return JSON.parse(packageRaw);
+    } catch (err) {
+        console.warn(
+            chalk.yellow(
+                cleanMultiline(
+                    `Failed to parse the package.json file correctly:`,
+                ),
+            ),
+            err,
+        );
+    }
 }
 
 export function applyCommands(registry: ModuleRegistry) {
@@ -132,12 +143,12 @@ export async function setupCommandsAndEvents() {
                     );
                 }
 
-                const { data: enabledModules } = await supabase
+                const { data: enabledModules } = (await supabase
                     .from("guild_modules")
                     .select("*")
                     .eq("guild_id", String(guildId))
                     .eq("module_id", event.module)
-                    .single() as { data: { enabled: boolean } | null };
+                    .single()) as { data: { enabled: boolean } | null };
 
                 if (!enabledModules?.enabled) return;
             }
@@ -182,12 +193,12 @@ export async function setupCommandsAndEvents() {
             });
         }
 
-        const { data: enabledModules } = await supabase
+        const { data: enabledModules } = (await supabase
             .from("guild_modules")
             .select("*")
             .eq("guild_id", guildId)
             .eq("module_id", command.module)
-            .single() as { data: { enabled: boolean } | null };
+            .single()) as { data: { enabled: boolean } | null };
 
         if (!enabledModules?.enabled) {
             if (!command.kind || command.kind === "optional") {
