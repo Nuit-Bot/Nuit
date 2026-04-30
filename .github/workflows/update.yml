@@ -3,16 +3,58 @@ name: Notify Discord on Release
 on:
     release:
         types: [published]
-
 jobs:
     notify:
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-tags: true
+
             - name: Send Discord embed
               env:
                   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+                  PING_ROLE_ID: ${{ secrets.PING_ROLE_ID }}
               run: |
                   VERSION="${{ github.event.release.tag_name }}"
+
+                  # Strip leading 'v', then split into parts
+                  SEMVER="${VERSION#v}"
+                  IFS='.' read -r MAJOR MINOR PATCH BUILD <<< "$SEMVER"
+
+                  # If a 4th segment (build/hotfix) changed, skip the ping
+                  if [ -n "$BUILD" ]; then
+                    BUMP_TYPE=""
+                  elif [ -n "$MAJOR" ] && [ -n "$MINOR" ] && [ -n "$PATCH" ]; then
+                    # Determine which segment bumped by comparing to the previous tag
+                    PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+                    if [ -n "$PREV_TAG" ]; then
+                      PREV="${PREV_TAG#v}"
+                      IFS='.' read -r PREV_MAJOR PREV_MINOR PREV_PATCH <<< "$PREV"
+                      if [ "$MAJOR" != "$PREV_MAJOR" ]; then
+                        BUMP_TYPE="major"
+                      elif [ "$MINOR" != "$PREV_MINOR" ]; then
+                        BUMP_TYPE="minor"
+                      else
+                        BUMP_TYPE="patch"
+                      fi
+                    else
+                      BUMP_TYPE="major"
+                    fi
+                  else
+                    BUMP_TYPE=""
+                  fi
+
+                  # Send ping message if applicable
+                  if [ -n "$BUMP_TYPE" ]; then
+                    PING_PAYLOAD=$(jq -n \
+                      --arg content "<@&${PING_ROLE_ID}> New Nuit $BUMP_TYPE version" \
+                      '{ content: $content }')
+                    curl -fsSL -X POST "$DISCORD_WEBHOOK" \
+                      -H "Content-Type: application/json" \
+                      -d "$PING_PAYLOAD"
+                  fi
+
                   NAME="${{ github.event.release.name }}"
                   URL="${{ github.event.release.html_url }}"
                   AUTHOR="${{ github.event.release.author.login }}"
