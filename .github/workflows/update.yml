@@ -1,0 +1,72 @@
+name: Notify Discord on Release
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    notify:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Send Discord embed
+              env:
+                  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+              run: |
+                  VERSION="${{ github.event.release.tag_name }}"
+                  NAME="${{ github.event.release.name }}"
+                  URL="${{ github.event.release.html_url }}"
+                  AUTHOR="${{ github.event.release.author.login }}"
+                  AUTHOR_URL="https://github.com/${{ github.event.release.author.login }}"
+                  AUTHOR_ICON="${{ github.event.release.author.avatar_url }}"
+                  PUBLISHED_AT="${{ github.event.release.published_at }}"
+                  PRERELEASE="${{ github.event.release.prerelease }}"
+
+                  # Truncate body to Discord's embed description limit (4096 chars)
+                  BODY=$(cat << 'EOF'
+                  ${{ github.event.release.body }}
+                  EOF
+                  )
+                  BODY="${BODY:0:4000}"
+                  BODY=$(echo "$BODY" | jq -Rsa .)
+
+                  if [ "$PRERELEASE" = "true" ]; then
+                    TITLE="🚧 $NAME ($VERSION)"
+                    COLOR=16744272  # orange
+                  else
+                    TITLE="🚀 $NAME ($VERSION)"
+                    COLOR=5793266   # blurple
+                  fi
+
+                  TIMESTAMP=$(date -d "$PUBLISHED_AT" -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+                  PAYLOAD=$(jq -n \
+                    --arg title "$TITLE" \
+                    --arg url "$URL" \
+                    --argjson description "$BODY" \
+                    --argjson color "$COLOR" \
+                    --arg author "$AUTHOR" \
+                    --arg author_url "$AUTHOR_URL" \
+                    --arg author_icon "$AUTHOR_ICON" \
+                    --arg timestamp "$TIMESTAMP" \
+                    --arg repo "${{ github.repository }}" \
+                    '{
+                      embeds: [{
+                        title: $title,
+                        url: $url,
+                        description: $description,
+                        color: $color,
+                        author: {
+                          name: $author,
+                          url: $author_url,
+                          icon_url: $author_icon
+                        },
+                        footer: {
+                          text: $repo
+                        },
+                        timestamp: $timestamp
+                      }]
+                    }')
+
+                  curl -fsSL -X POST "$DISCORD_WEBHOOK" \
+                    -H "Content-Type: application/json" \
+                    -d "$PAYLOAD"
