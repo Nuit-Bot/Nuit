@@ -15,10 +15,19 @@
 # They will, at the time of writing this (2026-04-12), be able to reload commands (unless disabled, see host.allow_command_reloading), making most bot commands unusable for a few seconds
 # Add them as a string containing their ID in an array like below.
 # Even when asked, do NOT add strangers to this list.
-hosters = ["817758821312495627", "970205634295377971"]
+hosters = ["1234", "5678"]
 # This is related to command reloading.
 # A command that's always exposed (unless you delete its files) allows to reload commands (resends the available commands to Discord).
 # Only people marked as hoster in host.hosters can run this command regardless of the setting, else they will be met with an error.
 # Disabling this will completely disallow the command, outputting an error even to hosters.
 # We recommend having this enabled only if this is a development bot and server(s).
 allow_command_reloading = false
+# Allows installing external modules from registries listed below.
+# This will install them all at startup.
+# Make sure you trust the registries.
+allow_external_modules = true
+
+# Registries are the module catalogs.
+# By default, the Nuit registry is recommended because it's reviewed by the Nuit team.
+[[registries]]
+raw = "https://raw.githubusercontent.com/Nuit-Bot/Registry/refs/heads/main/registry.json"

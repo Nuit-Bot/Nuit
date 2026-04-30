@@ -1,19 +1,20 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@nuit-bot/api";
 
-let supabase: SupabaseClient | null = null;
+let supabase: SupabaseClient<Database> | null = null;
 
-export function getSupabaseClient() {
+export function getSupabaseClient(): SupabaseClient<Database> {
     if (!supabase) {
         const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
-            throw new Error('Supabase URL and Key must be set in environment variables');
+            throw new Error(
+                "Supabase URL and Key must be set in environment variables",
+            );
         }
 
-        supabase = createClient(supabaseUrl, supabaseKey, {
-
-        });
+        supabase = createClient<Database>(supabaseUrl, supabaseKey, {});
     }
     return supabase;
 }

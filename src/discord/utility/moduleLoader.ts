@@ -1,0 +1,332 @@
+import {
+    createAPI,
+    type BaseCtx,
+    type ModuleContext,
+    type ModuleRegistry,
+    type NuitCommand,
+} from "@nuit-bot/api";
+import config from "../../utility/config";
+import { getSupabaseClient } from "../../utility/supabase";
+import { client } from "../main";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "path";
+import { Events, MessageFlags, REST, Routes } from "discord.js";
+import { cleanMultiline } from "./cleanMultiline";
+import chalk from "chalk";
+
+const supabase = getSupabaseClient();
+
+export const globalRegistry: ModuleRegistry = {
+    commands: [],
+    events: [],
+};
+
+export async function getPackageJSON(path: string) {
+    const packageRaw = await readFile(path, "utf-8").catch(() => null);
+
+    if (packageRaw === null) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(packageRaw);
+    } catch (err) {
+        console.warn(
+            chalk.yellow(
+                cleanMultiline(
+                    `Failed to parse the package.json file correctly:`,
+                ),
+            ),
+            err,
+        );
+    }
+}
+
+export function applyCommands(registry: ModuleRegistry) {
+    registry.commands.forEach((command) => {
+        if (!command.data || !command.execute) {
+            return console.warn(
+                cleanMultiline(
+                    `Command ${command.module} is missing "data" and/or "execute" values.
+                    ${chalk.green("Fix")}: Add the "data" and "execute" values.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Module name: ${command.module}`),
+                    )}`,
+                ),
+            );
+        }
+
+        globalRegistry.commands.push(command);
+    });
+}
+
+export function applyEvents(registry: ModuleRegistry) {
+    registry.events.forEach((event) => {
+        if (!event.name || !event.handler) {
+            return console.warn(
+                cleanMultiline(
+                    `Event ${String(event.name)} from ${event.module} is missing "name" and/or "handler" values.
+                    ${chalk.green("Fix")}: Add the "name" and "handler" values.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Module name: ${join(event.module)}`),
+                    )}`,
+                ),
+            );
+        }
+
+        globalRegistry.events.push(event);
+    });
+}
+
+export async function loadModule(
+    path: string,
+    moduleName: string,
+    packageJSON: Record<string, any>,
+) {
+    try {
+        const mod = await import(path);
+
+        if (!mod || !mod.setup) {
+            return console.warn(
+                cleanMultiline(
+                    `Skipping ${path} as its exports don't contain a setup() function.
+                    ${chalk.green("Fix")}: Consider making the module export an object with a setup() function.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Full path: ${join(path)}`),
+                    )}`,
+                ),
+            );
+        }
+
+        const kind = packageJSON.nuit?.kind ?? null;
+
+        const registry: ModuleRegistry = {
+            commands: [],
+            events: [],
+        };
+
+        const ctx: ModuleContext = {
+            supabase,
+            config,
+            client,
+            api: createAPI(registry, moduleName, kind),
+        };
+
+        await mod.setup(ctx);
+
+        applyCommands(registry);
+        applyEvents(registry);
+    } catch (err) {
+        console.error(`Error loading module ${path}`);
+        console.error(err);
+    }
+}
+
+const getGuildId = (...args: any[]) => args[0]?.guildId ?? null;
+
+export async function setupCommandsAndEvents() {
+    globalRegistry.events.forEach((event) => {
+        if (!event.name || !event.handler) {
+            return;
+        }
+
+        async function handler(...args: any[]) {
+            const guildId = getGuildId(...args);
+
+            if (event.guildScoped) {
+                if (!guildId) {
+                    return console.warn(
+                        `Event ${String(event.name)} from module ${event.module} is guild scoped but no guild ID was found.`,
+                    );
+                }
+
+                const { data: enabledModules } = (await supabase
+                    .from("guild_modules")
+                    .select("*")
+                    .eq("guild_id", String(guildId))
+                    .eq("module_id", event.module)
+                    .single()) as { data: { enabled: boolean } | null };
+
+                if (!enabledModules?.enabled) return;
+            }
+
+            await (event.handler as (...a: any[]) => Promise<void> | void)(
+                ...args,
+            );
+        }
+
+        if (event.once) {
+            client.once(event.name as string, handler);
+        } else {
+            client.on(event.name as string, handler);
+        }
+    });
+
+    client.on(Events.InteractionCreate, async (interaction) => {
+        if (!interaction.isChatInputCommand()) return;
+
+        const command = globalRegistry.commands.find(
+            (com) => com.data.name === interaction.commandName,
+        );
+
+        if (!command) {
+            console.error(`Could not find command ${interaction.commandName}`);
+            console.error(`Interaction ID: ${interaction.id}`);
+
+            return await interaction.reply({
+                content: cleanMultiline(`# That isn't supposed to happen...
+                    Seems like you ran a command that doesn't exist.
+                    -# Do you have superpowers?!`),
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+
+        const guildId = getGuildId(interaction);
+        if (!guildId) {
+            return await interaction.reply({
+                content: cleanMultiline(`# This isn't the right place...
+                You ran the command in a DM or a guild-less context.
+                -# Run a command in a guild where I'm present!`),
+            });
+        }
+
+        const { data: enabledModules } = (await supabase
+            .from("guild_modules")
+            .select("*")
+            .eq("guild_id", guildId)
+            .eq("module_id", command.module)
+            .single()) as { data: { enabled: boolean } | null };
+
+        if (!enabledModules?.enabled) {
+            if (!command.kind || command.kind === "optional") {
+                return await interaction.reply({
+                    content: cleanMultiline(`# This module isn't enabled
+                    The \`${command.module}\` module is disabled on this server.
+                    -# Ask a server admin to enable it in the bot settings.`),
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+        }
+
+        const baseCtx: BaseCtx = {
+            client,
+            supabase,
+            config,
+        };
+
+        try {
+            await command.execute(interaction, baseCtx);
+        } catch (err) {
+            console.error(
+                `Error executing command ${command.data.name} in guild ${interaction.guildId}`,
+            );
+            console.error(err);
+            console.error(
+                cleanMultiline(`Details:
+                - Interaction ID: ${interaction.id}
+                - Guild ID: ${interaction.guildId}
+                - Command Name: ${command.data.name}
+                - Module Name: ${command.module}`),
+            );
+        }
+    });
+}
+
+export async function scanModules(path: string) {
+    const modules = await readdir(path);
+
+    for (const moduleDir of modules) {
+        const packageJSON = await getPackageJSON(
+            join(path, moduleDir, "package.json"),
+        );
+
+        if (!packageJSON) {
+            console.warn(
+                cleanMultiline(
+                    `Skipping ${moduleDir} as it doesn't have a package.json.
+                    ${chalk.green("Fix")}: Make one inside the module's root.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Full path: ${join(path, moduleDir)}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
+
+        if (!packageJSON.name) {
+            console.warn(
+                cleanMultiline(
+                    `Skipping ${moduleDir} as its package.json does not have a "name" entry.
+                    ${chalk.green("Fix")}: Consider adding it with a unique name (for example, a scoped module like @nuit-bot/module-welcome).
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Full path: ${join(path, moduleDir)}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
+
+        if (!packageJSON.main) {
+            console.warn(
+                cleanMultiline(
+                    `Skipping ${moduleDir} as its package.json does not have a "main" entry.
+                    ${chalk.green("Fix")}: Consider adding it and point it to the module's main file.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Full path: ${join(path, moduleDir)}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
+
+        const entryPath = join(path, moduleDir, packageJSON.main);
+
+        const entryExists = await Bun.file(entryPath).exists();
+        if (!entryExists) {
+            console.warn(
+                cleanMultiline(
+                    `${chalk.yellow(`Skipping ${moduleDir} as its entry file does not exist.`)}
+                    ${chalk.green("Fix")}: Ensure the "main" field in package.json points to an existing file.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Entry path: ${entryPath}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
+
+        await loadModule(entryPath, packageJSON.name, packageJSON);
+    }
+}
+
+export async function pushCommandsToDiscord(commands: NuitCommand[]) {
+    const rest = new REST().setToken(process.env.DISCORD_TOKEN as string);
+
+    const mappedCommands = commands.map((c) =>
+        typeof c.data.toJSON === "function" ? c.data.toJSON() : c.data,
+    );
+
+    try {
+        await rest.put(
+            Routes.applicationCommands(process.env.DISCORD_CLIENT_ID as string),
+            { body: mappedCommands },
+        );
+    } catch (err) {
+        console.error(
+            cleanMultiline(`Failed to push commands to Discord.
+        ${chalk.gray(
+            cleanMultiline(`Details:
+            - Command count: ${mappedCommands.length}
+            - Commands: ${mappedCommands.map((c: any) => c.name).join(", ")}
+            - Error: ${err}`),
+        )}`),
+        );
+    }
+}

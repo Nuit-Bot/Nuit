@@ -1,0 +1,7 @@
+{
+    "name": "@nuit-bot/module-moderation",
+    "main": "main.ts",
+    "nuit": {
+        "kind": "optional"
+    }
+}

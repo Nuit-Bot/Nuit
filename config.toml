@@ -8,3 +8,5 @@
 [host]
 hosters = ["817758821312495627", "970205634295377971"]
 allow_command_reloading = false
+# External modules are disabled on production Nuit instances because of infrastructure, if we get an upgrade we may allow it.
+allow_external_modules = false
