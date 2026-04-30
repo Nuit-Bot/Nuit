@@ -114,7 +114,7 @@ if (config.host.allow_external_modules) {
                 } finally {
                     clearTimeout(timeoutId);
                 }
-                if (false) req = req!; // never reached, satisfies TS narrowing
+                req = req!; // never reached, satisfies TS narrowing
                 if (!req.ok) {
                     console.warn(
                         cleanMultiline(`${chalk.yellow(`Failed to fetch registry, skipping.`)}
