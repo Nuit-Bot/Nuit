@@ -1,4 +1,5 @@
 @import url("/vars.css");
+@import url("/fonts.css");
 
 body,
 html,
@@ -9,4 +10,113 @@ main {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    color: var(--text-primary);
+    font-family: "Geist";
+}
+
+#hero {
+    height: 100vh;
+    width: 100vw;
+    box-sizing: border-box;
+    padding: 32px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.hero_primary {
+    font-family: "Bricolage Grotesque";
+    font-size: 64px;
+    font-weight: 500;
+    margin-top: 32px;
+}
+
+.hero_primary > .italic {
+    font-style: italic;
+    color: var(--accent-400);
+}
+
+.hero_primary > .through {
+    text-decoration: line-through;
+    text-decoration-color: var(--accent-600);
+}
+
+.hero_desc {
+    width: 50%;
+    color: var(--text-secondary);
+    font-family: "Geist Mono";
+}
+
+.tags {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.tags > .tag {
+    margin: 0;
+    padding: 8px;
+    background: var(--bg-elevated);
+    border: 0.5px solid var(--border-accent);
+    color: var(--text-accent);
+    border-radius: 10px;
+    font-size: small;
+}
+
+.hero_button.primary {
+    background: oklch(0.48 0.185 272 / 0.15);
+    border: 0.5px solid var(--border-accent);
+    color: var(--text-accent);
+    padding: 10px 20px;
+    border-radius: 8px;
+}
+
+.hero_button.primary:hover {
+    background: oklch(0.48 0.185 272 / 0.25);
+    border-color: var(--accent-400);
+}
+
+.hero_button.secondary {
+    background: transparent;
+    border: 0.5px solid var(--border-default);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 8px;
+}
+
+.hero_button.secondary:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.stars {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.star {
+    position: absolute;
+    bottom: 0;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: floatStar 6s linear infinite;
+}
+
+#star-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
 }
