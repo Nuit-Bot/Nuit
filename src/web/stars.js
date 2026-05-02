@@ -16,7 +16,7 @@ const stars = [];
 function createStar() {
     return {
         x: Math.random() * canvas.width,
-        y: canvas.height + Math.random() * 100,
+        y: -Math.random() * canvas.height,
         size: Math.random() * 2 + 1,
         baseSpeed: Math.random() * 0.7 + 0.3,
         opacity: Math.random() * 0.5 + 0.5,
@@ -60,18 +60,18 @@ function animate() {
         ctx.fill();
 
         // Move
-        star.y -= star.baseSpeed * speedMultiplier;
+        star.y += star.baseSpeed * speedMultiplier;
 
         // Trigger easing when first star hits top
-        if (!easingTriggered && star.y <= 0) {
+        if (!easingTriggered && star.y >= canvas.height) {
             easingTriggered = true;
             easingStartTime = Date.now();
         }
 
         // Reset if offscreen
-        if (star.y < -star.size) {
+        if (star.y > canvas.height + star.size) {
             Object.assign(star, createStar());
-            star.y = canvas.height + star.size;
+            star.y = -star.size;
         }
     }
 

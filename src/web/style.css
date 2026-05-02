@@ -32,14 +32,15 @@ main {
     margin-top: 32px;
 }
 
-.hero_primary > .italic {
+.hero_primary>.italic {
     font-style: italic;
     color: var(--accent-400);
 }
 
-.hero_primary > .through {
+.hero_primary>.through {
     text-decoration: line-through;
     text-decoration-color: var(--accent-600);
+    text-decoration-thickness: 6px;
 }
 
 .hero_desc {
@@ -54,7 +55,7 @@ main {
     gap: 8px;
 }
 
-.tags > .tag {
+.tags>.tag {
     margin: 0;
     padding: 8px;
     background: var(--bg-elevated);
