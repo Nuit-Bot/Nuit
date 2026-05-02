@@ -32,21 +32,21 @@ main {
     margin-top: 32px;
 }
 
-.hero_primary>.italic {
+.hero_primary > .italic {
     font-style: italic;
     color: var(--accent-400);
 }
 
-.hero_primary>.through {
+.hero_primary > .through {
     text-decoration: line-through;
     text-decoration-color: var(--accent-600);
-    text-decoration-thickness: 6px;
+    text-decoration-thickness: 4px;
 }
 
 .hero_desc {
     width: 50%;
     color: var(--text-secondary);
-    font-family: "Geist Mono";
+    font-family: "Geist";
 }
 
 .tags {
@@ -55,7 +55,7 @@ main {
     gap: 8px;
 }
 
-.tags>.tag {
+.tags > .tag {
     margin: 0;
     padding: 8px;
     background: var(--bg-elevated);
@@ -63,6 +63,13 @@ main {
     color: var(--text-accent);
     border-radius: 10px;
     font-size: small;
+}
+
+.hero_button {
+    cursor: pointer;
+    transition:
+        background 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+        border-color 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 .hero_button.primary {
