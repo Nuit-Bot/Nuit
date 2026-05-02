@@ -17,6 +17,9 @@ Nuit is a Discord bot built with TypeScript and Discord.js. The bot features a m
 
 ## Installation
 
+> [!NOTE]
+> A CLI will be released for setting up Nuit someday, for now everything has to be done manually.
+
 - [Development](#development)
 - [Production](#production)
 
@@ -81,13 +84,19 @@ Note that we may take longer to review pull requests depending on their size - l
 Put the following environment variables in your `.env` file:
 
 - `DISCORD_TOKEN`: Your Discord bot token from the Discord Developer Portal
+- `DISCORD_CLIENT_ID`: Your Discord bot's client ID
+- `DISCORD_CALLBACK_URL`: The URL that's used for Supabase Auth redirecting. See format below
 - `SUPABASE_URL`: Your Supabase project URL
 - `SUPABASE_KEY`: Your Supabase secret key (MUST BE SECRET KEY, found in Supabase dashboard > Settings > API Keys)
+- `SESSION_SECRET`: A randomized string that's used for storing express-session data
 
 They must be formatted like the following:
 
 ```ini
 DISCORD_TOKEN=your-discord-bot-token-here
+DISCORD_CLIENT_ID=your-discord-client-id
+DISCORD_CALLBACK_URL=${base_server_url}/auth/discord/callback
 SUPABASE_URL=https://your-supabase-project
 SUPABASE_KEY=your-supabase-service-role-key
+SESSION_SECRET=randomized-session-secret-here
 ```
