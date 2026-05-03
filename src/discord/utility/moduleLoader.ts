@@ -1,6 +1,7 @@
 import {
     createAPI,
     type BaseCtx,
+    type Json,
     type ModuleContext,
     type ModuleRegistry,
     type NuitCommand,
@@ -13,8 +14,20 @@ import { join } from "path";
 import { Events, MessageFlags, REST, Routes } from "discord.js";
 import { cleanMultiline } from "./cleanMultiline";
 import chalk from "chalk";
+import { TtlCache } from "../../utility/cache";
 
 const supabase = getSupabaseClient();
+
+export const guildModulesCache = new TtlCache<
+    string,
+    {
+        config: Json;
+        enabled: boolean;
+        guild_id: string;
+        module_id: string;
+        updated_at: string;
+    }[]
+>(60_000);
 
 export const globalRegistry: ModuleRegistry = {
     commands: [],
@@ -143,14 +156,20 @@ export async function setupCommandsAndEvents() {
                     );
                 }
 
-                const { data: enabledModules } = (await supabase
-                    .from("guild_modules")
-                    .select("*")
-                    .eq("guild_id", String(guildId))
-                    .eq("module_id", event.module)
-                    .single()) as { data: { enabled: boolean } | null };
+                let modules = guildModulesCache.get(guildId);
 
-                if (!enabledModules?.enabled) return;
+                if (!modules) {
+                    const { data } = await supabase
+                        .from("guild_modules")
+                        .select("*")
+                        .eq("guild_id", String(guildId));
+
+                    modules = data ?? [];
+                    guildModulesCache.set(guildId, modules);
+                }
+
+                const mod = modules?.find((m) => m.module_id === event.module);
+                if (!mod?.enabled) return;
             }
 
             await (event.handler as (...a: any[]) => Promise<void> | void)(
