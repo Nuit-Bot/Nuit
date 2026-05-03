@@ -36,11 +36,17 @@ async function load() {
     commonGuilds.forEach(guild => {
         const clone = document.importNode(guildTemplate.content, true)
 
-        clone.querySelector("img.icon").src = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=64`
-        clone.querySelector("h3.name").textContent = guild.name
+        const card = clone.querySelector(".guild")
+
+        card.querySelector("img.icon").src = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=64`
+        card.querySelector("h3.name").textContent = guild.name
+
+        card.addEventListener("click", () => {
+            window.location.replace(`/dashboard/${guild.id}/overview`)
+        })
 
         guildList.appendChild(clone)
-    });
+    })
 
     document.querySelector("#loading").style.backdropFilter = "blur(0px)";
 

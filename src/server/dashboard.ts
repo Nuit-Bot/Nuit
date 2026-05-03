@@ -16,6 +16,7 @@ export interface DiscordRESTGuild {
 }
 
 export const mutualGuildsCache = new TtlCache<string, []>(90_000);
+export const guildCache = new TtlCache<string, object>(90_000);
 
 export async function getMutualGuilds(providerToken: string, userId: string) {
     let guilds;
@@ -61,8 +62,33 @@ export function userToDiscord(user: User) {
     };
 }
 
-app.get("/dashboard/:guildId/:module", (req, res) => {
-    res.sendFile(path.join(import.meta.dirname, "..", "config", "index.html"));
+export async function hasAccess(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) {
+    const guildId = req.params.guildId;
+    if (!guildId) throw new Error("Missing guild ID");
+
+    const mutual = await getMutualGuilds(
+        req.session.supabaseSession?.provider_token as string,
+        userToDiscord(req.session.supabaseSession?.user as User).id,
+    );
+
+    console.log(mutual);
+
+    if (mutual.some((g: DiscordRESTGuild) => g.id === guildId)) {
+        next();
+    } else {
+        console.log("hey");
+        return res.redirect("/dashboard");
+    }
+}
+
+app.get("/dashboard/:guildId/:module", requireAuth, (req, res) => {
+    res.sendFile(
+        path.join(import.meta.dirname, "..", "web", "config", "index.html"),
+    );
 });
 
 app.get("/api/users/@me", (req, res) => {
@@ -95,4 +121,15 @@ app.get("/api/guilds/common", async (req, res) => {
     }
 
     res.json(mutualGuilds);
+});
+
+app.get("/api/guild/:guildId", requireAuth, hasAccess, async (req, res) => {
+    const { guildId } = req.params;
+
+    const cached = guildCache.get(guildId as string);
+    if (cached) return res.json(cached);
+
+    const guild = (await client.guilds.fetch(guildId as string)).toJSON();
+    guildCache.set(guildId as string, guild as object);
+    res.json(guild);
 });
