@@ -1,4 +1,3 @@
-// discordauth.ts
 import { app } from "./main.ts";
 import { getSupabaseClient } from "../utility/supabase.ts";
 import type { Session as SupabaseSession } from "@supabase/supabase-js";

@@ -75,12 +75,9 @@ export async function hasAccess(
         userToDiscord(req.session.supabaseSession?.user as User).id,
     );
 
-    console.log(mutual);
-
     if (mutual.some((g: DiscordRESTGuild) => g.id === guildId)) {
         next();
     } else {
-        console.log("hey");
         return res.redirect("/dashboard");
     }
 }
@@ -129,7 +126,37 @@ app.get("/api/guild/:guildId", requireAuth, hasAccess, async (req, res) => {
     const cached = guildCache.get(guildId as string);
     if (cached) return res.json(cached);
 
-    const guild = (await client.guilds.fetch(guildId as string)).toJSON();
-    guildCache.set(guildId as string, guild as object);
-    res.json(guild);
+    const guild: any = (await client.guilds.fetch(guildId as string)).toJSON();
+
+    const formattedGuild = {
+        id: guild.id,
+        name: guild.name,
+        iconURL: guild.iconURL,
+        members: guild.members,
+        channels: guild.channels,
+        bans: guild.bans,
+        roles: guild.roles,
+        invites: guild.invites,
+        autoModerationRules: guild.autoModerationRules,
+        shardId: guild.shardId,
+        splash: guild.splash,
+        banner: guild.banner,
+        description: guild.description,
+        vanityURLCode: guild.vanityURLCode,
+        memberCount: guild.memberCount,
+        large: guild.large,
+        botJoinedTimestamp: guild.joinedTimestamp,
+        rulesChannelId: guild.rulesChannelId,
+        updateChannelId: guild.publicUpdatesChannelId,
+        locale: guild.preferredLocale,
+        ownerId: guild.ownerId,
+        emojis: guild.emojis,
+        stickers: guild.stickers,
+        createdTimestamp: guild.createdTimestamp,
+        nameAcronym: guild.nameAcronym,
+    };
+
+    guildCache.set(guildId as string, formattedGuild as object);
+
+    res.json(formattedGuild);
 });
