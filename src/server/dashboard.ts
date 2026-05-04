@@ -5,6 +5,7 @@ import path from "node:path";
 import { PermissionsBitField } from "discord.js";
 import { client } from "../discord/main";
 import { TtlCache } from "../utility/cache";
+import { getSupabaseClient } from "../utility/supabase";
 
 export interface DiscordRESTGuild {
     id: string;
@@ -128,6 +129,12 @@ app.get("/api/guild/:guildId", requireAuth, hasAccess, async (req, res) => {
 
     const guild: any = (await client.guilds.fetch(guildId as string)).toJSON();
 
+    const guildConfig = await getSupabaseClient()
+        .from("guilds")
+        .select("config")
+        .eq("guild_id", String(guildId))
+        .single();
+
     const formattedGuild = {
         id: guild.id,
         name: guild.name,
@@ -154,6 +161,7 @@ app.get("/api/guild/:guildId", requireAuth, hasAccess, async (req, res) => {
         stickers: guild.stickers,
         createdTimestamp: guild.createdTimestamp,
         nameAcronym: guild.nameAcronym,
+        guildConfig,
     };
 
     guildCache.set(guildId as string, formattedGuild as object);
