@@ -8,6 +8,8 @@ import {
 import { cleanMultiline } from "../../discord/utility/cleanMultiline";
 import { randomInt } from "node:crypto";
 import chalk from "chalk";
+import { getSupabaseClient } from "../../utility/supabase";
+import { client } from "../../discord/main";
 
 const loadingPhrases = [
     "Bip boop, Nuit is here!",
@@ -23,6 +25,8 @@ const loadingPhrases = [
     "I'm awake, I'm awake...",
     "Loaded! Don't ask how long it took.",
 ];
+
+const supabase = getSupabaseClient();
 
 export async function setup(ctx: ModuleContext) {
     ctx.api.registerCommand({
@@ -54,4 +58,30 @@ export async function setup(ctx: ModuleContext) {
         },
         { guildScoped: false },
     );
+
+    ctx.api.onEvent(Events.GuildCreate, async (guild) => {
+        const { error: guildInsertError } = await supabase
+            .from("guilds")
+            .insert({
+                guild_id: guild.id,
+                locale: guild.preferredLocale,
+            });
+
+        if (guildInsertError) {
+            console.error("Error when adding guild", guildInsertError);
+        }
+    });
+
+    ctx.api.onEvent(Events.GuildDelete, async (guild) => {
+        const { error: guildUpdateError } = await supabase
+            .from("guilds")
+            .update({
+                available: false,
+            })
+            .eq("guild_id", guild.id);
+
+        if (guildUpdateError) {
+            console.error("Error when updating guild", guildUpdateError);
+        }
+    });
 }

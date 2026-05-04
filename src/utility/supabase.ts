@@ -14,7 +14,11 @@ export function getSupabaseClient(): SupabaseClient<Database> {
             );
         }
 
-        supabase = createClient<Database>(supabaseUrl, supabaseKey, {});
+        supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+            auth: {
+                flowType: "pkce",
+            },
+        });
     }
     return supabase;
 }
