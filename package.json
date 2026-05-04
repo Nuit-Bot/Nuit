@@ -11,7 +11,7 @@
         "typescript": "^5.9.3"
     },
     "dependencies": {
-        "@nuit-bot/api": "0.0.17",
+        "@nuit-bot/api": "0.0.18.1",
         "@supabase/supabase-js": "^2.103.3",
         "@types/express-session": "^1.19.0",
         "chalk": "^5.6.2",

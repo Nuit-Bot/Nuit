@@ -29,6 +29,8 @@ export const guildModulesCache = new TtlCache<
     }[]
 >(60_000);
 
+export const guildAvailableCache = new TtlCache<string, boolean>(60_000);
+
 export const globalRegistry: ModuleRegistry = {
     commands: [],
     events: [],
@@ -140,6 +142,21 @@ export async function loadModule(
 
 const getGuildId = (...args: any[]) => args[0]?.guildId ?? null;
 
+async function isGuildAvailable(guildId: string): Promise<boolean> {
+    const cached = guildAvailableCache.get(guildId);
+    if (cached !== undefined) return cached;
+
+    const { data } = await supabase
+        .from("guilds")
+        .select("available")
+        .eq("guild_id", guildId)
+        .single();
+
+    const available = data?.available === true;
+    guildAvailableCache.set(guildId, available);
+    return available;
+}
+
 export async function setupCommandsAndEvents() {
     globalRegistry.events.forEach((event) => {
         if (!event.name || !event.handler) {
@@ -155,6 +172,8 @@ export async function setupCommandsAndEvents() {
                         `Event ${String(event.name)} from module ${event.module} is guild scoped but no guild ID was found.`,
                     );
                 }
+
+                if (!(await isGuildAvailable(guildId))) return;
 
                 let modules = guildModulesCache.get(guildId);
 
@@ -211,6 +230,8 @@ export async function setupCommandsAndEvents() {
                 -# Run a command in a guild where I'm present!`),
             });
         }
+
+        if (!(await isGuildAvailable(guildId))) return;
 
         const { data: enabledModules } = (await supabase
             .from("guild_modules")
