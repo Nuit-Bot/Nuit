@@ -38,7 +38,7 @@
         "start": "bun run dist/main.js",
         "dev:web": "bun --bun ./node_modules/vite/bin/vite.js",
         "dev:bot": "bun --watch src/discord/main.ts",
-        "build:web": "bun --bun ./node_modules/vite/bin/vite.js build",
+        "build:web": "bun scripts/generate-page-manifest.ts && bun --bun ./node_modules/vite/bin/vite.js build",
         "build": "bun run build:web && bun build src/main.ts --outdir dist --target bun --sourcemap"
     }
 }

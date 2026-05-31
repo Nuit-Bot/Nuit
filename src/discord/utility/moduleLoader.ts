@@ -38,7 +38,14 @@ export const globalRegistry: ModuleRegistry = {
     config: [],
 };
 
+export const modulePages = new Set<string>();
+export const modulePageSchemas = new Map<string, ModuleRegistry["config"]>();
+
 export const bus = createMessageBus();
+
+function hasCustomPage(packageJSON: Record<string, any>) {
+    return typeof packageJSON.nuit?.page === "string";
+}
 
 export async function getPackageJSON(path: string) {
     const packageRaw = await readFile(path, "utf-8").catch(() => null);
@@ -61,7 +68,9 @@ export async function getPackageJSON(path: string) {
     }
 }
 
-export function applyConfigs(registry: ModuleRegistry) {
+export function applyConfigs(registry: ModuleRegistry, hasPage = false) {
+    if (hasPage) return;
+
     registry.config.forEach((field) => {
         if (!field.key || !field.label || !field.type || !field.module) {
             return console.warn(
@@ -143,6 +152,7 @@ export async function loadModule(
         }
 
         const kind = packageJSON.nuit?.kind ?? null;
+        const hasPage = hasCustomPage(packageJSON);
 
         const registry: ModuleRegistry = {
             commands: [],
@@ -160,7 +170,12 @@ export async function loadModule(
 
         await mod.setup(ctx);
 
-        applyConfigs(registry);
+        if (hasPage) {
+            modulePages.add(moduleName);
+            modulePageSchemas.set(moduleName, registry.config);
+        }
+
+        applyConfigs(registry, hasPage);
         applyCommands(registry);
         applyEvents(registry);
     } catch (err) {
