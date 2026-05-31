@@ -1,7 +1,29 @@
-import type {
-    ModuleConfigResponse,
-    ModuleOverview,
-} from "./configTypes";
+import type { ModuleConfigField } from "@nuit-bot/components";
+
+type ConfigValue = string | number | boolean;
+
+export type ModuleOverview = {
+    id: string;
+    name: string;
+    kind: "internal" | "essential" | "optional" | null;
+    enabled: boolean;
+    configurable: boolean;
+    hasPage: boolean;
+    commandCount: number;
+    eventCount: number;
+    fieldCount: number;
+    updatedAt: string | null;
+};
+
+export type ModuleConfigResponse = {
+    guildId: string;
+    module: string;
+    schema: ModuleConfigField[];
+    enabled: boolean;
+    config: Record<string, ConfigValue>;
+    updatedAt: string | null;
+    hasPage: boolean;
+};
 
 type CurrentUser = {
     id: string;
@@ -81,7 +103,7 @@ export const api = {
     updateModuleConfig(
         guildId: string,
         moduleId: string,
-        config: Record<string, string | number | boolean>,
+        config: Record<string, ConfigValue>,
     ) {
         return request<ModuleConfigResponse>(
             `/api/guild/${guildId}/${encodeURIComponent(moduleId)}/config`,

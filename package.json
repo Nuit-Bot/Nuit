@@ -6,6 +6,7 @@
     "devDependencies": {
         "@types/bun": "^1.3.13",
         "@types/express": "^5.0.6",
+        "@types/node": "^25.9.1",
         "@types/pg": "^8.20.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
@@ -18,6 +19,7 @@
     },
     "dependencies": {
         "@nuit-bot/api": "^0.0.22",
+        "@nuit-bot/components": "^0.0.1",
         "@phosphor-icons/react": "2.1.10",
         "better-auth": "1.6.10",
         "chalk": "5.6.2",
@@ -35,9 +37,9 @@
     "scripts": {
         "dev": "bun --watch src/main.ts",
         "start": "bun run dist/main.js",
-        "dev:web": "bun --bun ./node_modules/vite/bin/vite.js",
+        "dev:web": "bun scripts/generate-page-manifest.ts && bun --bun ./node_modules/vite/bin/vite.js",
         "dev:bot": "bun --watch src/discord/main.ts",
-        "build:web": "bun --bun ./node_modules/vite/bin/vite.js build",
+        "build:web": "bun scripts/generate-page-manifest.ts && bun --bun ./node_modules/vite/bin/vite.js build",
         "build": "bun run build:web && bun build src/main.ts --outdir dist --target bun --sourcemap"
     }
 }

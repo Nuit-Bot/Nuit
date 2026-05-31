@@ -6,6 +6,7 @@
       "name": "nuit-bot",
       "dependencies": {
         "@nuit-bot/api": "^0.0.22",
+        "@nuit-bot/components": "^0.0.1",
         "@phosphor-icons/react": "2.1.10",
         "better-auth": "1.6.10",
         "chalk": "5.6.2",
@@ -23,6 +24,7 @@
       "devDependencies": {
         "@types/bun": "^1.3.13",
         "@types/express": "^5.0.6",
+        "@types/node": "^25.9.1",
         "@types/pg": "^8.20.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
@@ -137,6 +139,8 @@
     "@noble/hashes": ["@noble/hashes@2.2.0", "", {}, "sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg=="],
 
     "@nuit-bot/api": ["@nuit-bot/api@0.0.22", "", { "peerDependencies": { "@discordjs/builders": "^1", "discord.js": "^14" }, "optionalPeers": ["@discordjs/builders", "discord.js"] }, "sha512-J+Kuq96+/qPkwl6kK415XSQLOhMz1t5i04xA8pvaBRt/KpVjR+PVSwUIgMBZ+xhOFBoZuC6KUaGm+Hv3Dxt4aw=="],
+
+    "@nuit-bot/components": ["@nuit-bot/components@0.0.1", "", { "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }, "sha512-5AGNpgLAxq7GI30TLQZw/yqYSALlzGiO2reeQxe7I6aO2h/3UnxTKiH+7kXcDWU0fNpG196EpSX93BFBbjznFg=="],
 
     "@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.41.1", "", {}, "sha512-/UhIkaZgPutTFmQ7RnIJGgDXZmtEJ7Dvi86xNTFWcnRxVRNk/aotsqDJYeEvDP+FSMB2SdW+pQzNMcWP0rwuNA=="],
 

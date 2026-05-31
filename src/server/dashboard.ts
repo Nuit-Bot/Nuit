@@ -8,6 +8,8 @@ import { client } from "../discord/main";
 import {
     globalRegistry,
     guildModulesCache,
+    modulePageSchemas,
+    modulePages,
 } from "../discord/utility/moduleLoader";
 import { TtlCache } from "../utility/cache";
 import { db } from "../db/main";
@@ -33,6 +35,10 @@ interface DashboardAuthUser {
 }
 
 function getModuleSchema(moduleId: string) {
+    if (modulePages.has(moduleId)) {
+        return modulePageSchemas.get(moduleId) ?? [];
+    }
+
     return globalRegistry.config.filter((field) => field.module === moduleId);
 }
 
@@ -42,6 +48,7 @@ function getAllModuleIds() {
             ...globalRegistry.commands.map((command) => command.module),
             ...globalRegistry.events.map((event) => event.module),
             ...globalRegistry.config.map((field) => field.module),
+            ...modulePages,
         ]),
     );
 }
@@ -67,6 +74,7 @@ function getModuleKind(moduleId: string) {
 
 function moduleExists(moduleId: string) {
     return (
+        modulePages.has(moduleId) ||
         globalRegistry.config.some((field) => field.module === moduleId) ||
         globalRegistry.commands.some(
             (command) => command.module === moduleId,
@@ -107,13 +115,15 @@ async function getGuildModulesOverview(guildId: string) {
                 (entry) => entry.module_id === moduleId,
             );
             const fields = getModuleSchema(moduleId);
+            const hasPage = modulePages.has(moduleId);
 
             return {
                 id: moduleId,
                 name: formatModuleName(moduleId),
                 kind: getModuleKind(moduleId),
                 enabled: stored?.enabled ?? false,
-                configurable: fields.length > 0,
+                configurable: fields.length > 0 || hasPage,
+                hasPage,
                 commandCount: globalRegistry.commands.filter(
                     (command) => command.module === moduleId,
                 ).length,
@@ -275,6 +285,7 @@ app.get(
                     ? (config as Record<string, Json>)
                     : {},
                 updatedAt: data?.updated_at ?? null,
+                hasPage: modulePages.has(moduleId),
             });
         } catch (error) {
             console.error("Failed to fetch module config", error);
@@ -365,6 +376,7 @@ app.put(
                     ? (config as Record<string, Json>)
                     : {},
                 updatedAt: data.updated_at,
+                hasPage: modulePages.has(moduleId),
             });
         } catch (error) {
             console.error("Failed to update module config", error);

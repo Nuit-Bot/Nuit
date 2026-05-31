@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import Button from "../components/Button";
-import Card from "../components/Card";
-import ConfigPanel from "../components/ConfigPanel";
-import ConfirmationDialog from "../components/ConfirmationDialog";
-import Container from "../components/Container";
-import UnsavedChangesIndicator from "../components/UnsavedChangesIndicator";
+import {
+    Button, Card, ConfigPanel, ConfirmationDialog,
+    Container, UnsavedChangesIndicator,
+} from "@nuit-bot/components";
+import { useModuleConfig } from "@nuit-bot/components";
+import type { ModuleConfigResponse, ModuleOverview } from "../lib/api";
+import type { ConfigValue } from "../types/modulePage";
 import UserMenu from "../components/UserMenu";
 import useAuth from "../hooks/useAuth";
 import useDocumentTitle from "../hooks/useDocumentTitle";
-import useModuleConfig from "../hooks/useModuleConfig";
 import { AuthError, api } from "../lib/api";
-import type { ModuleConfigResponse, ModuleOverview } from "../lib/configTypes";
+import { modulePages } from "./modules/manifest";
 import "./ModuleConfig.css";
 
 function formatDate(value: string | null) {
@@ -50,6 +50,11 @@ export default function ModuleConfig() {
         initialConfig: data?.config ?? {},
         schema: data?.schema ?? [],
     });
+
+    const pageLoader = data?.hasPage ? modulePages[resolvedModuleId] : undefined;
+    const CustomPageComponent = useMemo(() => {
+        return pageLoader ? lazy(pageLoader) : null;
+    }, [pageLoader]);
 
     useEffect(() => {
         if (!resolvedGuildId || !resolvedModuleId) return;
@@ -110,6 +115,33 @@ export default function ModuleConfig() {
         }
         return feedback;
     }, [data?.schema]);
+
+    const handlePageUpdateConfig = useCallback(
+        async (newConfig: Record<string, ConfigValue>) => {
+            if (!data) return;
+
+            setSaving(true);
+            try {
+                const response = await api.updateModuleConfig(
+                    resolvedGuildId,
+                    resolvedModuleId,
+                    newConfig,
+                );
+                setData(response);
+            } catch (err: unknown) {
+                if (err instanceof AuthError) {
+                    window.location.assign("/login");
+                    return;
+                }
+                setError(
+                    err instanceof Error ? err.message : "Failed to save module config",
+                );
+            } finally {
+                setSaving(false);
+            }
+        },
+        [data, resolvedGuildId, resolvedModuleId],
+    );
 
     async function onSave() {
         if (!data) return;
@@ -227,7 +259,9 @@ export default function ModuleConfig() {
                     <p className="moduleConfigEyebrow">Module configuration</p>
                     <h1>{moduleMeta?.name ?? resolvedModuleId}</h1>
                     <p className="moduleConfigSubtitle">
-                        Edit this module&apos;s guild-specific settings.
+                        {CustomPageComponent
+                            ? "Custom configuration page provided by this module."
+                            : "Edit this module's guild-specific settings."}
                     </p>
                 </section>
 
@@ -260,24 +294,57 @@ export default function ModuleConfig() {
                             </Card>
                         </section>
 
-                        <section>
-                            <ConfigPanel
-                                fields={data.schema}
-                                values={configState.values}
-                                validationErrors={configState.validationErrors}
-                                fieldFeedback={fieldFeedback}
-                                saving={saving}
-                                onChange={configState.onChange}
-                                onSave={onSave}
-                            />
-                        </section>
+                        {data.hasPage && !modulePages[resolvedModuleId] ? (
+                            <p className="moduleConfigError">
+                                This module provides a custom configuration page, but it
+                                has not been built yet. Run <code>bun run build:web</code>{" "}
+                                to include it.
+                            </p>
+                        ) : null}
 
-                        <UnsavedChangesIndicator
-                            visible={configState.hasUnsavedChanges}
-                            saving={saving}
-                            onDiscard={configState.reset}
-                            onSave={onSave}
-                        />
+                        {CustomPageComponent ? (
+                            <Suspense
+                                fallback={
+                                    <div className="moduleConfigLoading">
+                                        Loading custom configuration...
+                                    </div>
+                                }
+                            >
+                                <CustomPageComponent
+                                    guildId={resolvedGuildId}
+                                    moduleId={resolvedModuleId}
+                                    config={data.config}
+                                    enabled={data.enabled}
+                                    data={{
+                                        schema: data.schema,
+                                        updatedAt: data.updatedAt,
+                                    }}
+                                    onUpdateConfig={handlePageUpdateConfig}
+                                    onToggleEnabled={onToggleEnabled}
+                                />
+                            </Suspense>
+                        ) : data.schema.length > 0 ? (
+                            <>
+                                <section>
+                                    <ConfigPanel
+                                        fields={data.schema}
+                                        values={configState.values}
+                                        validationErrors={configState.validationErrors}
+                                        fieldFeedback={fieldFeedback}
+                                        saving={saving}
+                                        onChange={configState.onChange}
+                                        onSave={onSave}
+                                    />
+                                </section>
+
+                                <UnsavedChangesIndicator
+                                    visible={configState.hasUnsavedChanges}
+                                    saving={saving}
+                                    onDiscard={configState.reset}
+                                    onSave={onSave}
+                                />
+                            </>
+                        ) : null}
 
                         <ConfirmationDialog
                             open={showDisableDialog}
