@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import Button from "./Button";
-import ConfirmationDialog from "./ConfirmationDialog";
+import { Button, ConfirmationDialog } from "@nuit-bot/components";
 import { api, type CurrentUser } from "../lib/api";
 import "./UserMenu.css";
 

@@ -1,9 +1,6 @@
 import { GearIcon } from "@phosphor-icons/react";
-import Badge from "./Badge";
-import Button from "./Button";
-import Card from "./Card";
-import Toggle from "./Toggle";
-import type { ModuleOverview } from "../lib/configTypes";
+import { Badge, Button, Card, Toggle } from "@nuit-bot/components";
+import type { ModuleOverview } from "@nuit-bot/components";
 import "./ModuleCard.css";
 
 type ModuleCardProps = {

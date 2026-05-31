@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import Card from "../components/Card";
-import Container from "../components/Container";
+import { Card, Container } from "@nuit-bot/components";
 import ServerIcon from "../components/ServerIcon";
 import UserMenu from "../components/UserMenu";
 import useAuth from "../hooks/useAuth";

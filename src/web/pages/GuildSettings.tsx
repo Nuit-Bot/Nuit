@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import Card from "../components/Card";
-import Container from "../components/Container";
+import { Card, Container } from "@nuit-bot/components";
 import ModuleList from "../components/ModuleList";
 import UserMenu from "../components/UserMenu";
 import useAuth from "../hooks/useAuth";

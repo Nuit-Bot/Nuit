@@ -1,25 +1,13 @@
 import { useState } from "react";
-import Badge from "../components/Badge";
-import Button from "../components/Button";
-import Card from "../components/Card";
-import Checkbox from "../components/Checkbox";
-import ConfigPanel from "../components/ConfigPanel";
-import ConfirmationDialog from "../components/ConfirmationDialog";
-import Container from "../components/Container";
-import Divider from "../components/Divider";
-import FieldError from "../components/FieldError";
-import FieldLevelFeedback from "../components/FieldLevelFeedback";
-import FormField from "../components/FormField";
-import FormGroup from "../components/FormGroup";
-import Input from "../components/Input";
+import {
+    Badge, Button, Card, Checkbox, ConfigPanel,
+    ConfirmationDialog, Container, Divider,
+    FieldError, FieldLevelFeedback, FormField, FormGroup,
+    Input, Select, Stack, Textarea, Toggle, UnsavedChangesIndicator,
+} from "@nuit-bot/components";
+import type { ModuleConfigField, ModuleOverview } from "@nuit-bot/components";
 import ModuleList from "../components/ModuleList";
-import Select from "../components/Select";
 import ServerIcon from "../components/ServerIcon";
-import Stack from "../components/Stack";
-import Textarea from "../components/Textarea";
-import Toggle from "../components/Toggle";
-import UnsavedChangesIndicator from "../components/UnsavedChangesIndicator";
-import type { ModuleConfigField, ModuleOverview } from "../lib/configTypes";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import "../styles/global.css";
 import "./Test.css";

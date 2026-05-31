@@ -27,7 +27,8 @@
         "noPropertyAccessFromIndexSignature": false,
         "types": [
             "bun",
-            "vite/client"
+            "vite/client",
+            "node"
         ],
         "skipDefaultLibCheck": true
     },

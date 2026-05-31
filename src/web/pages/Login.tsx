@@ -1,7 +1,5 @@
 import { Navigate } from "react-router-dom";
-import Button from "../components/Button";
-import Card from "../components/Card";
-import Container from "../components/Container";
+import { Button, Card, Container } from "@nuit-bot/components";
 import useAuth from "../hooks/useAuth";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import "./Login.css";

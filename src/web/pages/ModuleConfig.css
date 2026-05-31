@@ -38,6 +38,11 @@
     margin-bottom: 10px;
 }
 
+.moduleConfigLoading {
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+}
+
 .moduleConfigSummary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
