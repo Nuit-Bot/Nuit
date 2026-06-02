@@ -7,6 +7,7 @@ import {
     type NuitCommand,
 } from "@nuit-bot/api";
 import config from "../../utility/config";
+import { getProjectRoot } from "../../utility/projectRoot";
 import { client } from "../main";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "path";
@@ -18,6 +19,15 @@ import { db } from "../../db/main";
 import { guild_modules, guilds } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
 import { createMessageBus } from "../../core/bus";
+
+interface LockfileModule {
+    version?: string;
+    commit?: string;
+}
+
+interface LockfileData {
+    modules: Record<string, LockfileModule>;
+}
 
 export const guildModulesCache = new TtlCache<
     string,
@@ -339,6 +349,80 @@ export async function setupCommandsAndEvents() {
             );
         }
     });
+}
+
+export async function readLockfile() {
+    try {
+        const content = await readFile(
+            join(getProjectRoot(), "nuit.lock"),
+            { encoding: "utf-8" },
+        );
+        return JSON.parse(content) as LockfileData;
+    } catch {
+        return { modules: {} };
+    }
+}
+
+export async function loadExternalModules() {
+    const lockfile = await readLockfile();
+
+    for (const [moduleName] of Object.entries(lockfile.modules)) {
+        let pkgJSONPath: string;
+        try {
+            pkgJSONPath = Bun.resolveSync(
+                moduleName + "/package.json",
+                getProjectRoot(),
+            );
+        } catch {
+            console.warn(
+                chalk.yellow(
+                    `Could not find module "${moduleName}" - is it installed?`,
+                ),
+            );
+            continue;
+        }
+
+        const packageJSON = await getPackageJSON(pkgJSONPath);
+        if (!packageJSON) {
+            console.warn(
+                chalk.yellow(
+                    `Module "${moduleName}": package.json is missing or invalid.`,
+                ),
+            );
+            continue;
+        }
+
+        if (!packageJSON.main) {
+            console.warn(
+                cleanMultiline(
+                    `Module "${moduleName}" does not have a "main" entry in its package.json.
+                    ${chalk.green("Fix")}: Consider adding it and point it to the module's main file.`,
+                ),
+            );
+            continue;
+        }
+
+        const moduleDir = join(pkgJSONPath, "..");
+        const entryPath = join(moduleDir, packageJSON.main);
+
+        const entryExists = await Bun.file(entryPath).exists();
+        if (!entryExists) {
+            console.warn(
+                cleanMultiline(
+                    `${chalk.yellow(`Skipping "${moduleName}" as its entry file does not exist.`)}
+                    ${chalk.green("Fix")}: Ensure the "main" field in package.json points to an existing file.
+                    ${chalk.gray(
+                        cleanMultiline(`Details:
+                                        - Module: ${moduleName}
+                                        - Entry path: ${entryPath}`),
+                    )}`,
+                ),
+            );
+            continue;
+        }
+
+        await loadModule(entryPath, packageJSON.name, packageJSON);
+    }
 }
 
 export async function scanModules(path: string) {
