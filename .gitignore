@@ -36,9 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Private config
 config.private.toml
 
-# Registry lock file
-registry.lock
-
 # Temp folder, used for temporary PR stuff
 .temp
 
@@ -47,3 +44,6 @@ better-auth_migrations
 
 # Modules manifest
 src/web/pages/modules/manifest.ts
+
+# Nuit lockfile
+nuit.lock

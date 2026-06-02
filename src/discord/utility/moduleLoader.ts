@@ -21,8 +21,8 @@ import { and, eq } from "drizzle-orm";
 import { createMessageBus } from "../../core/bus";
 
 interface LockfileModule {
-    path: string;
     version?: string;
+    commit?: string;
 }
 
 interface LockfileData {
@@ -366,19 +366,17 @@ export async function readLockfile() {
 export async function loadExternalModules() {
     const lockfile = await readLockfile();
 
-    for (const [moduleName, info] of Object.entries(lockfile.modules)) {
-        const packageName = info.path;
-
+    for (const [moduleName] of Object.entries(lockfile.modules)) {
         let pkgJSONPath: string;
         try {
             pkgJSONPath = Bun.resolveSync(
-                packageName + "/package.json",
+                moduleName + "/package.json",
                 getProjectRoot(),
             );
         } catch {
             console.warn(
                 chalk.yellow(
-                    `Could not find module "${moduleName}" (${packageName}) - is it installed?`,
+                    `Could not find module "${moduleName}" - is it installed?`,
                 ),
             );
             continue;
@@ -388,7 +386,7 @@ export async function loadExternalModules() {
         if (!packageJSON) {
             console.warn(
                 chalk.yellow(
-                    `Module "${moduleName}" (${packageName}): package.json is missing or invalid.`,
+                    `Module "${moduleName}": package.json is missing or invalid.`,
                 ),
             );
             continue;
@@ -397,7 +395,7 @@ export async function loadExternalModules() {
         if (!packageJSON.main) {
             console.warn(
                 cleanMultiline(
-                    `Module "${moduleName}" (${packageName}) does not have a "main" entry in its package.json.
+                    `Module "${moduleName}" does not have a "main" entry in its package.json.
                     ${chalk.green("Fix")}: Consider adding it and point it to the module's main file.`,
                 ),
             );
@@ -415,7 +413,7 @@ export async function loadExternalModules() {
                     ${chalk.green("Fix")}: Ensure the "main" field in package.json points to an existing file.
                     ${chalk.gray(
                         cleanMultiline(`Details:
-                                        - Package: ${packageName}
+                                        - Module: ${moduleName}
                                         - Entry path: ${entryPath}`),
                     )}`,
                 ),
