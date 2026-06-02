@@ -44,3 +44,6 @@ registry.lock
 
 # Better Auth migrations, you should generate them yourself
 better-auth_migrations
+
+# Modules manifest
+src/web/pages/modules/manifest.ts
