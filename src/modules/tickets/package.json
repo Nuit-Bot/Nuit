@@ -2,6 +2,7 @@
     "name": "@nuit-bot/module-tickets",
     "main": "main.ts",
     "nuit": {
-        "kind": "optional"
+        "kind": "optional",
+        "page": "./Config.tsx"
     }
 }
