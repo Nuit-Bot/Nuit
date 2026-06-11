@@ -31,7 +31,7 @@ Before you begin, please make sure you have the following setup:
 
 ## Development Setup
 
-Follow [SELFHOSTING.md](./SELFHOSTING.md)
+Follow [our installation docs](https://nuit-bot.github.io/Docs/installation.html)
 
 ## Code Style
 
@@ -60,7 +60,7 @@ Making a new module is simple:
 
 ```json
 {
-    "name": "@nuit-bot/module-[moduleName]", // the module's name, preferably the one put in the directory from step 1
+    "name": "[moduleName]", // the module's name, preferably the one put in the directory from step 1
     "main": "main.ts", // main entry point relative to `src/modules/[moduleName]`
     "nuit": {
         "kind": "" // "internal", "essential", "optional"
@@ -70,7 +70,7 @@ Making a new module is simple:
 
 3. Follow the structure of existing commands as a template
 
-Best example is [the main internal module](./src/modules/main/main.ts)
+Best example is [the main internal module](./src/modules/main/main.ts) or [the example module](https://github.com/Nuit-Bot/module-example)
 
 ## Submitting Changes
 
