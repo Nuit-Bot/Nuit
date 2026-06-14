@@ -84,7 +84,7 @@ export function createModuleApi(api: NuitAPI, moduleName: string): NuitAPI {
                 )
                 .limit(1);
 
-            return row?.enabled !== false;
+            return row?.enabled === true;
         },
 
         tableName(name: string) {
