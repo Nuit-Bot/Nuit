@@ -25,7 +25,7 @@
 
 ## Installation
 
-See [SELFHOSTING.md](./SELFHOSTING.md).
+See [our installation docs](https://nuit-bot.github.io/Docs/installation.html).
 
 ## Contributing
 

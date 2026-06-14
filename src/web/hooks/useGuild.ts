@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { AuthError, api, type GuildResponse } from "../lib/api";
-import type { ModuleOverview } from "../lib/configTypes";
+import { AuthError, api, type GuildResponse, type ModuleOverview } from "../lib/api";
 
 type UseGuildState = {
     guild: GuildResponse | null;

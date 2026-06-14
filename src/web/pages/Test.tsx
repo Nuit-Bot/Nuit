@@ -5,7 +5,7 @@ import {
     FieldError, FieldLevelFeedback, FormField, FormGroup,
     Input, Select, Stack, Textarea, Toggle, UnsavedChangesIndicator,
 } from "@nuit-bot/components";
-import type { ModuleConfigField, ModuleOverview } from "@nuit-bot/components";
+import type { ModuleConfigField } from "@nuit-bot/components";
 import ModuleList from "../components/ModuleList";
 import ServerIcon from "../components/ServerIcon";
 import useDocumentTitle from "../hooks/useDocumentTitle";
@@ -18,6 +18,7 @@ import {
     InfoIcon,
     LockIcon,
 } from "@phosphor-icons/react";
+import type { ModuleOverview } from "../lib/api";
 
 export default function StyleTest() {
     useDocumentTitle("Style test - Nuit");
@@ -95,6 +96,7 @@ export default function StyleTest() {
             kind: "optional",
             enabled: true,
             configurable: true,
+            hasPage: false,
             commandCount: 0,
             eventCount: 2,
             fieldCount: 4,
@@ -106,6 +108,7 @@ export default function StyleTest() {
             kind: "optional",
             enabled: false,
             configurable: true,
+            hasPage: false,
             commandCount: 0,
             eventCount: 1,
             fieldCount: 1,

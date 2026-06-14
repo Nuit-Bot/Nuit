@@ -1,7 +1,4 @@
-import type { ModuleContext, NuitDb } from "@nuit-bot/api";
-import { guild_modules } from "../../db/schema";
-import { and, eq } from "drizzle-orm";
-import { db } from "../../db/main";
+import type { ModuleContext } from "@nuit-bot/api";
 import { EmbedBuilder, type TextChannel } from "discord.js";
 
 type LogPayload = {
@@ -21,24 +18,11 @@ declare module "@nuit-bot/api" {
     }
 }
 
-async function getLogChannelId(guildId: string) {
-    const [config] = await db
-        .select({
-            enabled: guild_modules.enabled,
-            config: guild_modules.config,
-        })
-        .from(guild_modules)
-        .where(
-            and(
-                eq(guild_modules.guild_id, guildId),
-                eq(guild_modules.module_id, "@nuit-bot/module-logger"),
-            ),
-        )
-        .limit(1);
+async function getLogChannelId(ctx: ModuleContext, guildId: string) {
+    if (!(await ctx.api.isEnabled(guildId))) return;
 
-    if (!config || !config.enabled) return;
-
-    const loggerConfig = config.config as LoggerConfig;
+    const loggerConfig = await ctx.api.getGuildConfig<LoggerConfig>(guildId);
+    if (!loggerConfig) return;
     if (!loggerConfig.channelId) return;
 
     return loggerConfig.channelId;
@@ -46,7 +30,7 @@ async function getLogChannelId(guildId: string) {
 
 export async function setup(ctx: ModuleContext) {
     await ctx.bus.on("logger:log", async (payload: LogPayload) => {
-        const channelId = await getLogChannelId(payload.guildId);
+        const channelId = await getLogChannelId(ctx, payload.guildId);
 
         if (!channelId) return;
 
