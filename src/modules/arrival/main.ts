@@ -1,7 +1,5 @@
 import type { ModuleContext } from "@nuit-bot/api";
 import { EmbedBuilder, Events, TextChannel } from "discord.js";
-import { guild_modules } from "../../db/schema";
-import { and, eq } from "drizzle-orm";
 
 type ArrivalConfig = {
     welcomeChannelId?: string;
@@ -15,46 +13,20 @@ async function getChannelId(
     guildId: string,
     channelType: "welcomeChannelId" | "leaveChannelId",
 ) {
-    const [config] = await ctx.db
-        .select({
-            enabled: guild_modules.enabled,
-            config: guild_modules.config,
-        })
-        .from(guild_modules)
-        .where(
-            and(
-                eq(guild_modules.guild_id, guildId),
-                eq(guild_modules.module_id, "@nuit-bot/module-arrival"),
-            ),
-        )
-        .limit(1);
+    if (!(await ctx.api.isEnabled(guildId))) return;
 
-    if (!config || !config.enabled) return;
-
-    const arrivalConfig = config.config as ArrivalConfig;
+    const arrivalConfig = await ctx.api.getGuildConfig<ArrivalConfig>(guildId);
+    if (!arrivalConfig) return;
     if (!arrivalConfig[channelType]) return;
 
     return arrivalConfig[channelType];
 }
 
 async function getFieldConfigs(ctx: ModuleContext, guildId: string) {
-    const [config] = await ctx.db
-        .select({
-            enabled: guild_modules.enabled,
-            config: guild_modules.config,
-        })
-        .from(guild_modules)
-        .where(
-            and(
-                eq(guild_modules.guild_id, guildId),
-                eq(guild_modules.module_id, "@nuit-bot/module-arrival"),
-            ),
-        )
-        .limit(1);
+    if (!(await ctx.api.isEnabled(guildId))) return;
 
-    if (!config || !config.enabled) return;
-
-    const arrivalConfig = config.config as ArrivalConfig;
+    const arrivalConfig = await ctx.api.getGuildConfig<ArrivalConfig>(guildId);
+    if (!arrivalConfig) return;
 
     return {
         welcomeMessage:
