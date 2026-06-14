@@ -19,6 +19,14 @@ import { db } from "../../db/main";
 import { guild_modules, guilds } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
 import { createMessageBus } from "../../core/bus";
+import { createModuleApi } from "./moduleApi";
+import {
+    getModuleTables,
+    getPreviousLockfileSnapshot,
+    lockfileModuleChanged,
+    saveLockfileSnapshot,
+    syncModuleTables,
+} from "./moduleSchema";
 
 interface LockfileModule {
     version?: string;
@@ -52,6 +60,9 @@ export const modulePages = new Set<string>();
 export const modulePageSchemas = new Map<string, ModuleRegistry["config"]>();
 
 export const bus = createMessageBus();
+
+let currentLockfileSnapshot: LockfileData["modules"] = {};
+let previousLockfileSnapshot: LockfileData["modules"] = {};
 
 function hasCustomPage(packageJSON: Record<string, any>) {
     return typeof packageJSON.nuit?.page === "string";
@@ -144,6 +155,7 @@ export async function loadModule(
     path: string,
     moduleName: string,
     packageJSON: Record<string, any>,
+    options: { external?: boolean } = {},
 ) {
     try {
         const mod = await import(path);
@@ -163,6 +175,19 @@ export async function loadModule(
 
         const kind = packageJSON.nuit?.kind ?? null;
         const hasPage = hasCustomPage(packageJSON);
+        const tables = getModuleTables(moduleName, mod.schema);
+        const shouldSyncSchema =
+            tables.length > 0 &&
+            (!options.external ||
+                lockfileModuleChanged(
+                    moduleName,
+                    currentLockfileSnapshot,
+                    previousLockfileSnapshot,
+                ));
+
+        if (shouldSyncSchema) {
+            await syncModuleTables(moduleName, tables);
+        }
 
         const registry: ModuleRegistry = {
             commands: [],
@@ -174,7 +199,7 @@ export async function loadModule(
             db,
             config,
             client,
-            api: createAPI(registry, moduleName, kind),
+            api: createModuleApi(createAPI(registry, moduleName, kind), moduleName),
             bus,
         };
 
@@ -365,6 +390,12 @@ export async function readLockfile() {
 
 export async function loadExternalModules() {
     const lockfile = await readLockfile();
+    currentLockfileSnapshot = lockfile.modules;
+    previousLockfileSnapshot = await getPreviousLockfileSnapshot().catch((err) => {
+        console.error("Failed to read previous module lockfile snapshot.");
+        console.error(err);
+        return {};
+    });
 
     for (const [moduleName] of Object.entries(lockfile.modules)) {
         let pkgJSONPath: string;
@@ -421,8 +452,15 @@ export async function loadExternalModules() {
             continue;
         }
 
-        await loadModule(entryPath, packageJSON.name, packageJSON);
+        await loadModule(entryPath, packageJSON.name, packageJSON, {
+            external: true,
+        });
     }
+
+    await saveLockfileSnapshot(currentLockfileSnapshot).catch((err) => {
+        console.error("Failed to save module lockfile snapshot.");
+        console.error(err);
+    });
 }
 
 export async function scanModules(path: string) {

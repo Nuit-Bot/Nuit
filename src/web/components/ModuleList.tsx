@@ -1,4 +1,4 @@
-import type { ModuleOverview } from "../lib/configTypes";
+import type { ModuleOverview } from "../lib/api";
 import ModuleCard from "./ModuleCard";
 import "./ModuleList.css";
 

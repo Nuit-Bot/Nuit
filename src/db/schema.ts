@@ -34,3 +34,11 @@ export const guild_modules = pgTable(
     },
     (t) => [primaryKey({ columns: [t.guild_id, t.module_id] })],
 );
+
+export const module_runtime_state = pgTable("module_runtime_state", {
+    key: text("key").primaryKey(),
+    value: jsonb("value").default(sql`'{}'::jsonb`),
+    updated_at: timestamp("updated_at", { withTimezone: true }).default(
+        sql`now()`,
+    ),
+});
