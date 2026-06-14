@@ -47,3 +47,6 @@ src/web/pages/modules/manifest.ts
 
 # Nuit lockfile
 nuit.lock
+
+# Supabase folder when using Supabase locally
+supabase
