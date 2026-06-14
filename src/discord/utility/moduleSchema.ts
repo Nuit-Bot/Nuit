@@ -41,8 +41,11 @@ function columnSql(column: any) {
     if (column.notNull) parts.push(sql.raw("not null"));
     if (column.hasDefault) {
         if (typeof column.default === "string") {
-            parts.push(sql.raw("default " + JSON.stringify(column.default)));
-        } else if (typeof column.default === "number" || typeof column.default === "boolean") {
+            parts.push(sql.raw(`default '${column.default}'`));
+        } else if (
+            typeof column.default === "number" ||
+            typeof column.default === "boolean"
+        ) {
             parts.push(sql.raw("default " + String(column.default)));
         }
     }
@@ -73,13 +76,17 @@ export function getModuleTables(moduleName: string, exportedSchema: unknown) {
         exportedSchema === null ||
         Array.isArray(exportedSchema)
     ) {
-        throw new Error(`Module ${moduleName} exported schema must be an object.`);
+        throw new Error(
+            `Module ${moduleName} exported schema must be an object.`,
+        );
     }
 
     const tables = Object.values(exportedSchema as ModuleSchema);
     for (const table of tables) {
         if (!isTable(table)) {
-            throw new Error(`Module ${moduleName} schema contains a non-table export.`);
+            throw new Error(
+                `Module ${moduleName} schema contains a non-table export.`,
+            );
         }
 
         validateTableName(moduleName, getTableName(table));
@@ -92,20 +99,38 @@ export async function syncModuleTables(moduleName: string, tables: unknown[]) {
     for (const table of tables) {
         const tableName = getTableName(table as any);
         const existing = await db.execute(sql`
-            select column_name, data_type
+            select column_name
             from information_schema.columns
             where table_schema = 'public' and table_name = ${tableName}
         `);
 
-        const rows = Array.isArray(existing) ? existing : (existing as any).rows;
-        if (rows?.length) {
-            console.warn(
-                `Module ${moduleName}: table ${tableName} already exists; automatic schema alterations are not supported yet.`,
-            );
+        const rows = (
+            Array.isArray(existing) ? existing : (existing as any).rows
+        ) as {
+            column_name: string;
+        }[];
+
+        // Create table if it doesn't exist
+        if (rows?.length === 0) {
+            await db.execute(createTableSql(table));
             continue;
         }
 
-        await db.execute(createTableSql(table));
+        // Add missing columns
+        const existingColumns = new Set(rows.map((r) => r.column_name));
+        const schemaColumns = (table as any)[tableColumns] ?? {};
+
+        for (const column of Object.values(schemaColumns) as any[]) {
+            if (!existingColumns.has(column.name)) {
+                console.info(
+                    `Module ${moduleName}: adding column ${column.name} to table ${tableName}`,
+                );
+                const colSql = columnSql(column);
+                await db.execute(
+                    sql`alter table ${quoteIdent(tableName)} add column ${colSql}`,
+                );
+            }
+        }
     }
 }
 
@@ -151,5 +176,8 @@ export function lockfileModuleChanged(
     current: LockfileSnapshot,
     previous: LockfileSnapshot,
 ) {
-    return JSON.stringify(current[moduleName] ?? null) !== JSON.stringify(previous[moduleName] ?? null);
+    return (
+        JSON.stringify(current[moduleName] ?? null) !==
+        JSON.stringify(previous[moduleName] ?? null)
+    );
 }
